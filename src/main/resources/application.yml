@@ -1,0 +1,27 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: CROWDFUNDING_API
+  datasource:
+    username: root
+    password: Mysql
+    url: jdbc:mysql://localhost:3306/crowdfunding_database
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    defer-datasource-initialization: true
+    hibernate:
+      ddl-auto: update #if the table is not available please create the table
+      naming:
+        physical-strategy: com.intuit.crowdfundingRestAPI.CustomPhysicalNamingStrategy
+    show-sql: true #whatever the query is executing that query will be shown
+  boot:
+    admin:
+      client:
+        url: http://localhost:1111/
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+      
