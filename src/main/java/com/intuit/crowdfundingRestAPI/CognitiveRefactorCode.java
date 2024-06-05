@@ -118,3 +118,23 @@ public class P2POMTransformer {
         }
     }
 }
+
+private void validateAndSetOwnershipPercentage(P2PRelationship p2pRelationship, RelatedParty relatedParty) {
+    if (!"PP2MSBALDirectBeneficiaryOwnerOfRelationship".equals(p2pRelationship.getPartyRelationshipType().getID())) {
+        return;
+    }
+
+    if (relatedParty.getPercentageValueOfOwnership() == null) {
+        control.addNullAttribute("percentageValueOfOwnership");
+        return;
+    }
+
+    double percentage = relatedParty.getPercentageValueOfOwnership();
+    if (percentage > 100) {
+        throw new IllegalArgumentException("Ownership of MSBAL Direct Beneficiary must not be more than 100%");
+    }
+
+    p2pRelationship.setPercentageValueOfOwnership(percentage);
+}
+
+validateAndSetOwnershipPercentage(p2pRelationship, relatedParty);
