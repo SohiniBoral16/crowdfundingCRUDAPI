@@ -89,3 +89,29 @@ private void processOwnershipDetails(DTOControl control, P2PPartyToPartyRelation
         p2pRelationship.setVerificationMethodJapanUltimateBeneficialOwner(verificationMethod);
     }
 }
+private void processOwnershipDetails(DTOControl control, P2PPartyToPartyRelationship relatedParty, PartyToPartyRelationship p2pRelationship) {
+    Optional.ofNullable(relatedParty.getPercentageValueOfOwnership())
+            .ifPresentOrElse(
+                    value -> {
+                        if (relatedParty.getPercentageValueOfBeneficialOwnership() == null) {
+                            control.addNullAttribute("percentageValueOfOwnership");
+                        } else if (relatedParty.getPercentageValueOfOwnership() > 100) {
+                            throw new IllegalArgumentException("Ownership or HSBAL Direct Beneficiary must not be more than 100%");
+                        } else {
+                            p2pRelationship.setPercentageValueOfOwnership(value);
+                        }
+                    },
+                    () -> p2pRelationship.setPercentageValueOfOwnership(
+                            Optional.ofNullable(relatedParty.getPercentageValueOfBeneficialOwnership())
+                                    .orElse(0.0)  // Default to 0.0 or handle as needed
+                    )
+            );
+
+    Optional.ofNullable(relatedParty.getJapanUltimateBeneficialOwnerApplicability())
+            .ifPresent(applicability -> {
+                JapanUltimateBeneficialOwnerApplicabilityReason reason = new LazyJapanUltimateBeneficialOwnerApplicabilityReason();
+                reason.setTo(applicability.getId());
+                p2pRelationship.setJapanUltimateBeneficialOwnerApplicabilityReason(reason);
+            });
+}
+
