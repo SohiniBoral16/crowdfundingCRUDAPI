@@ -115,3 +115,45 @@ private void processOwnershipDetails(DTOControl control, P2PPartyToPartyRelation
             });
 }
 
+private void processOwnershipDetails(DTOControl control, P2PPartyToPartyRelationship relatedParty, PartyToPartyRelationship p2pRelationship) {
+    handlePercentageValueOfOwnership(control, relatedParty, p2pRelationship);
+    handleHSBALDirectBeneficiaryOwner(control, relatedParty, p2pRelationship);
+    handleRolePartyEmployeeTitle(control, relatedParty, p2pRelationship);
+}
+
+private void handlePercentageValueOfOwnership(DTOControl control, P2PPartyToPartyRelationship relatedParty, PartyToPartyRelationship p2pRelationship) {
+    Optional.ofNullable(relatedParty.getPercentageValueOfOwnership())
+            .ifPresentOrElse(
+                    value -> {
+                        if (relatedParty.getPercentageValueOfOwnership() > 100) {
+                            throw new IllegalArgumentException("Ownership or HSBAL Direct Beneficiary must not be more than 100%");
+                        } else {
+                            p2pRelationship.setPercentageValueOfOwnership(value);
+                        }
+                    },
+                    () -> control.addNullAttribute("percentageValueOfOwnership")
+            );
+}
+
+private void handleHSBALDirectBeneficiaryOwner(DTOControl control, P2PPartyToPartyRelationship relatedParty, PartyToPartyRelationship p2pRelationship) {
+    if (P2P_HSBAL_DIRECT_BENEFICIAL_OWNER_OF_RELATIONSHIP_ID.equals(p2pRelationship.getPartyRelationshipType().getID())) {
+        handlePercentageValueOfOwnership(control, relatedParty, p2pRelationship);
+    }
+}
+
+private void handleRolePartyEmployeeTitle(DTOControl control, P2PPartyToPartyRelationship relatedParty, PartyToPartyRelationship p2pRelationship) {
+    if (relatedParty.getRolePartyEmployeeTitle() != null) {
+        if (ObjectUtils.isEmpty(relatedParty.getRolePartyEmployeeTitle().getId())) {
+            control.addNullAttribute("rolePartyEmployeeTitle");
+        } else {
+            EmployeeTitle employeeTitle = new MutableEmployeeTitle();
+            if (ObjectUtils.isEmpty(relatedParty.getRolePartyEmployeeTitle().getEmployeeTitleGroup().getId())) {
+                EmployeeTitleGroupCode employeeTitleGroupCode = new LazyEmployeeTitleGroupCode();
+                employeeTitleGroupCode.setCode(relatedParty.getRolePartyEmployeeTitle().getEmployeeTitleGroup().getCode());
+                employeeTitle.setEmployeeTitleGroupCode(employeeTitleGroupCode);
+            }
+            employeeTitle.setCode(relatedParty.getRolePartyEmployeeTitle().getCode());
+            p2pRelationship.setRolePartyEmployeeTitle(employeeTitle);
+        }
+    }
+}
