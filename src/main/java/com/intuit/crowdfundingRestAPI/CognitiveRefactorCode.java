@@ -1,140 +1,91 @@
-public class P2POMTransformer {
+public List<PartyToPartyRelationship> toOOMPartyToPartyRelationship(List<P2PPartyToPartyRelationship> relatedParties) {
+    List<PartyToPartyRelationship> relatedPartyList = new ArrayList<>();
+    DTOControl control = new DTOControl();
 
-    private DTOControl control = new DTOControl();
-
-    public List<PartyToPartyRelationship> toP2PPartyToPartyRelationship(List<P2PPartyToPartyRelationship> relatedParties) {
-        List<PartyToPartyRelationship> relatedPartyList = new ArrayList<>();
-
-        if (Objects.isNull(relatedParties) || relatedParties.isEmpty()) {
-            return relatedPartyList;
-        }
-
+    if (Objects.nonNull(relatedParties) && !relatedParties.isEmpty()) {
         for (P2PPartyToPartyRelationship relatedParty : relatedParties) {
-            MutablePartyToPartyRelationship p2pRelationship = new MutablePartyToPartyRelationship();
-            setBasicAttributes(p2pRelationship, relatedParty);
-            setOwnershipPercentage(p2pRelationship, relatedParty);
-            setEmployeeTitle(p2pRelationship, relatedParty);
-            setRevocableTrustIndicator(p2pRelationship, relatedParty);
-            setEmployeeTitleRole2(p2pRelationship, relatedParty);
-            setDependenceFactor(p2pRelationship, relatedParty);
-            setAnnualOperatingCost(p2pRelationship, relatedParty);
-            setBeneficialOwnership(p2pRelationship, relatedParty);
-            setConfirmationMethod(p2pRelationship, relatedParty);
+            PartyToPartyRelationship p2pRelationship = new MutablePartyToPartyRelationship();
+            processBasicDetails(control, relatedParty, p2pRelationship);
+            processAttributes(control, relatedParty, p2pRelationship);
+            processEmployerDetails(control, relatedParty, p2pRelationship);
+            processOwnershipDetails(control, relatedParty, p2pRelationship);
             relatedPartyList.add(p2pRelationship);
         }
-
-        return relatedPartyList;
     }
 
-    private void setBasicAttributes(MutablePartyToPartyRelationship p2pRelationship, P2PPartyToPartyRelationship relatedParty) {
-        p2pRelationship.setBusinessInitiative(relatedParty.getBusinessInitiative().getID());
-        p2pRelationship.setPersonInChargeVerificationLetterReceivedDate(relatedParty.getPersonInChargeVerificationLetterReceivedDate());
-        p2pRelationship.setRoleType(relatedParty.getRoleType().getRoleType().getID());
-        p2pRelationship.setRoleParty(relatedParty.getRoleParty().getParty().getPartyID());
-    }
-
-    private void setOwnershipPercentage(MutablePartyToPartyRelationship p2pRelationship, P2PPartyToPartyRelationship relatedParty) {
-        if (!isDirectBeneficiaryOwnerOfRelationship(p2pRelationship, relatedParty)) {
-            return;
-        }
-        if (relatedParty.getPercentageValueOfOwnership() == null) {
-            control.addNullAttribute("percentageValueOfOwnership");
-        } else if (relatedParty.getPercentageValueOfOwnership() > 100) {
-            throw new IllegalArgumentException("Ownership of MSBAL Direct Beneficiary must not be more than 100%");
-        } else {
-            p2pRelationship.setPercentageValueOfOwnership(relatedParty.getPercentageValueOfOwnership());
-        }
-    }
-
-    private boolean isDirectBeneficiaryOwnerOfRelationship(MutablePartyToPartyRelationship p2pRelationship, P2PPartyToPartyRelationship relatedParty) {
-        return "PP2MSBALDirectBeneficiaryOwnerOfRelationship".equals(p2pRelationship.getPartyRelationshipType().getID());
-    }
-
-    private void setEmployeeTitle(MutablePartyToPartyRelationship p2pRelationship, P2PPartyToPartyRelationship relatedParty) {
-        if (relatedParty.getRolePartyEmployeeTitle() == null) {
-            control.addNullAttribute("rolePartyEmployeeTitle");
-            return;
-        }
-
-        JobTitleList jobTitleList = relatedParty.getRolePartyEmployeeTitle();
-        if (Objects.isNull(jobTitleList.getEmployeeTitle().getID())) {
-            control.addNullAttribute("rolePartyEmployeeTitle");
-            return;
-        }
-
-        MutableEmployeeTitle employeeTitle = new MutableEmployeeTitle();
-        employeeTitle.setCode(jobTitleList.getEmployeeTitle().getCode());
-        employeeTitle.setGroupCode(jobTitleList.getEmployeeTitle().getGroupCode().getCode());
-        employeeTitle.setDescription(jobTitleList.getEmployeeTitle().getDescription().getText());
-        p2pRelationship.setRolePartyEmployeeTitle(employeeTitle);
-    }
-
-    private void setRevocableTrustIndicator(MutablePartyToPartyRelationship p2pRelationship, P2PPartyToPartyRelationship relatedParty) {
-        if (relatedParty.getRevocableTrustIndicator() != null) {
-            p2pRelationship.setRevocableTrustIndicator(relatedParty.getRevocableTrustIndicator());
-        }
-    }
-
-    private void setEmployeeTitleRole2(MutablePartyToPartyRelationship p2pRelationship, P2PPartyToPartyRelationship relatedParty) {
-        if (relatedParty.getRole2PartyEmployeeTitle() == null) {
-            control.addNullAttribute("role2PartyEmployeeTitle");
-            return;
-        }
-
-        JobTitleList jobTitleList = relatedParty.getRole2PartyEmployeeTitle();
-        if (Objects.isNull(jobTitleList.getEmployeeTitle().getID())) {
-            control.addNullAttribute("role2PartyEmployeeTitle");
-            return;
-        }
-
-        MutableEmployeeTitle employeeTitle = new MutableEmployeeTitle();
-        employeeTitle.setCode(jobTitleList.getEmployeeTitle().getCode());
-        employeeTitle.setGroupCode(jobTitleList.getEmployeeTitle().getGroupCode().getCode());
-        employeeTitle.setDescription(jobTitleList.getEmployeeTitle().getDescription().getText());
-        p2pRelationship.setRole2PartyEmployeeTitle(employeeTitle);
-    }
-
-    private void setDependenceFactor(MutablePartyToPartyRelationship p2pRelationship, P2PPartyToPartyRelationship relatedParty) {
-        if (relatedParty.getEconomicDependenceFactor() != null) {
-            p2pRelationship.setEconomicDependenceFactor(relatedParty.getEconomicDependenceFactor().getID());
-        }
-    }
-
-    private void setAnnualOperatingCost(MutablePartyToPartyRelationship p2pRelationship, P2PPartyToPartyRelationship relatedParty) {
-        if (relatedParty.getPercentOfAnnualOperatingCostFundedByDonor() != null) {
-            p2pRelationship.setPercentOfAnnualOperatingCostFundedByDonor(relatedParty.getPercentOfAnnualOperatingCostFundedByDonor().getID());
-        }
-    }
-
-    private void setBeneficialOwnership(MutablePartyToPartyRelationship p2pRelationship, P2PPartyToPartyRelationship relatedParty) {
-        if (relatedParty.getPercentOfBeneficialOwnership() != null) {
-            p2pRelationship.setPercentOfBeneficialOwnership(relatedParty.getPercentOfBeneficialOwnership().getID());
-        }
-    }
-
-    private void setConfirmationMethod(MutablePartyToPartyRelationship p2pRelationship, P2PPartyToPartyRelationship relatedParty) {
-        if (relatedParty.getPersonInChargeAuthorityConfirmationMethod() != null) {
-            p2pRelationship.setPersonInChargeAuthorityConfirmationMethod(relatedParty.getPersonInChargeAuthorityConfirmationMethod().getID());
-        }
-    }
+    return relatedPartyList;
 }
 
-private void validateAndSetOwnershipPercentage(P2PRelationship p2pRelationship, RelatedParty relatedParty) {
-    if (!"PP2MSBALDirectBeneficiaryOwnerOfRelationship".equals(p2pRelationship.getPartyRelationshipType().getID())) {
-        return;
+private void processBasicDetails(DTOControl control, P2PPartyToPartyRelationship relatedParty, PartyToPartyRelationship p2pRelationship) {
+    p2pRelationship.setBusinessRole(relatedParty.getBusinessRole());
+    p2pRelationship.setLegalEntity(relatedParty.getLegalEntity());
+    p2pRelationship.setBeneficiary(relatedParty.getBeneficiary());
+    p2pRelationship.setRoleName(relatedParty.getRoleName());
+    p2pRelationship.setPersonName(relatedParty.getPersonName());
+    p2pRelationship.setRelationType(relatedParty.getRelationType());
+    p2pRelationship.setEffectiveDate(relatedParty.getEffectiveDate());
+    p2pRelationship.setEndDate(relatedParty.getEndDate());
+    p2pRelationship.setDocument(relatedParty.getDocument());
+}
+
+private void processAttributes(DTOControl control, P2PPartyToPartyRelationship relatedParty, PartyToPartyRelationship p2pRelationship) {
+    if (relatedParty.getInfluenceOver() != null) {
+        control.addNullAttribute("influenceOver");
+        p2pRelationship.setInfluenceOver(relatedParty.getInfluenceOver());
+    } else {
+        p2pRelationship.setInfluenceOver(control.getInfluenceOverIndicator());
     }
 
-    if (relatedParty.getPercentageValueOfOwnership() == null) {
+    if (relatedParty.getRevocableTrustIndication() != null) {
+        control.addNullAttribute("revocableTrustIndication");
+        p2pRelationship.setRevocableTrustIndication(relatedParty.getRevocableTrustIndication());
+    } else {
+        p2pRelationship.setRevocableTrustIndication(control.getRevocableTrustIndication());
+    }
+
+    if (relatedParty.getPercentageValueOfOwnership() != null) {
         control.addNullAttribute("percentageValueOfOwnership");
-        return;
+        p2pRelationship.setPercentageValueOfOwnership(relatedParty.getPercentageValueOfOwnership());
+    } else {
+        p2pRelationship.setPercentageValueOfOwnership(control.getPercentageValueOfOwnership());
     }
-
-    double percentage = relatedParty.getPercentageValueOfOwnership();
-    if (percentage > 100) {
-        throw new IllegalArgumentException("Ownership of MSBAL Direct Beneficiary must not be more than 100%");
-    }
-
-    p2pRelationship.setPercentageValueOfOwnership(percentage);
 }
 
-validateAndSetOwnershipPercentage(p2pRelationship, relatedParty);
+private void processEmployerDetails(DTOControl control, P2PPartyToPartyRelationship relatedParty, PartyToPartyRelationship p2pRelationship) {
+    if (relatedParty.getRolePartyEmployeeTitle() != null) {
+        if (Objects.isNull(relatedParty.getRolePartyEmployeeTitle().getId())) {
+            control.addNullAttribute("rolePartyEmployeeTitle");
+            EmployeeTitle employeeTitle = new MutableEmployeeTitle();
+            employeeTitle.setCode(control.getRolePartyEmployeeTitle().getCode());
+            p2pRelationship.setRolePartyEmployeeTitle(employeeTitle);
+        } else {
+            p2pRelationship.setRolePartyEmployeeTitle(relatedParty.getRolePartyEmployeeTitle());
+        }
+    }
+}
+
+private void processOwnershipDetails(DTOControl control, P2PPartyToPartyRelationship relatedParty, PartyToPartyRelationship p2pRelationship) {
+    if (relatedParty.getPercentBeneficialOwner() != null) {
+        PercentBeneficialOwner percentBeneficialOwner = new LazyPercentBeneficialOwner();
+        percentBeneficialOwner.setTo(relatedParty.getPercentBeneficialOwner().getId());
+        p2pRelationship.setPercentBeneficialOwner(percentBeneficialOwner);
+    }
+
+    if (relatedParty.getPercentDirectInvestorBeneficialOwner() != null) {
+        PercentDirectInvestorBeneficialOwner percentDirectInvestorBeneficialOwner = new LazyPercentDirectInvestorBeneficialOwner();
+        percentDirectInvestorBeneficialOwner.setTo(relatedParty.getPercentDirectInvestorBeneficialOwner().getId());
+        p2pRelationship.setPercentDirectInvestorBeneficialOwner(percentDirectInvestorBeneficialOwner);
+    }
+
+    if (relatedParty.getPercentIntermediaryBeneficialOwner() != null) {
+        PercentIntermediaryBeneficialOwner percentIntermediaryBeneficialOwner = new LazyPercentIntermediaryBeneficialOwner();
+        percentIntermediaryBeneficialOwner.setTo(relatedParty.getPercentIntermediaryBeneficialOwner().getId());
+        p2pRelationship.setPercentIntermediaryBeneficialOwner(percentIntermediaryBeneficialOwner);
+    }
+
+    if (relatedParty.getVerificationMethodJapanUltimateBeneficialOwner() != null) {
+        VerificationMethodJapanUltimateBeneficialOwner verificationMethod = new LazyVerificationMethodJapanUltimateBeneficialOwner();
+        verificationMethod.setTo(relatedParty.getVerificationMethodJapanUltimateBeneficialOwner().getId());
+        p2pRelationship.setVerificationMethodJapanUltimateBeneficialOwner(verificationMethod);
+    }
+}
