@@ -1,3 +1,68 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.ParameterizedTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class P2PTransformerTest {
+
+    @Mock
+    private DTOControl control;
+
+    @InjectMocks
+    private P2PTransformer transformer;
+
+    private P2PPartyToPartyRelationship relatedParty;
+    private PartyToPartyRelationship p2pRelationship;
+
+    @BeforeEach
+    public void setUp() {
+        relatedParty = new P2PPartyToPartyRelationship();
+        p2pRelationship = new PartyToPartyRelationship();
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideOwnershipDetails")
+    public void testProcessHSBALDirectOwnershipDetails(Double ownershipValue, boolean expectException) {
+        relatedParty.setPercentageValueOfOwnership(ownershipValue);
+        p2pRelationship.setPartyRelationshipType(new PartyRelationshipType("HSBAL_DIRECT_BENEFICIAL_OWNER_OF_RELATIONSHIP_ID"));
+
+        if (expectException) {
+            assertThrows(IllegalArgumentException.class, () -> {
+                transformer.processHSBALDirectOwnershipDetails(control, relatedParty, p2pRelationship);
+            });
+        } else {
+            transformer.processHSBALDirectOwnershipDetails(control, relatedParty, p2pRelationship);
+            if (ownershipValue == null) {
+                verify(control).addNullAttribute("percentageValueOfOwnership");
+            } else {
+                assertEquals(ownershipValue, p2pRelationship.getPercentageValueOfOwnership());
+            }
+        }
+    }
+
+    private static Stream<Arguments> provideOwnershipDetails() {
+        return Stream.of(
+                Arguments.of(50.0, false),    // Normal case
+                Arguments.of(150.0, true),    // Exception case
+                Arguments.of(null, false)     // Null case
+        );
+    }
+}
+
+
+
 private void processOwnershipDetails(DTOControl control, P2PPartyToPartyRelationship relatedParty, PartyToPartyRelationship p2pRelationship) {
     String relationshipTypeId = p2pRelationship.getPartyRelationshipType().getID();
     if (P2P_HSBAL_DIRECT_BENEFICIAL_OWNER_OF_RELATIONSHIP_ID == relationshipTypeId || 
