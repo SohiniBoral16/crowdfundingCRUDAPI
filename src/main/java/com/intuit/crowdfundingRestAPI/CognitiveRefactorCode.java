@@ -1,3 +1,18 @@
+@Test
+void testProcessMSBALDirectOwnershipDetails_withOtherRelationshipType() {
+    P2PPartyToPartyRelationship relatedParty = mock(P2PPartyToPartyRelationship.class);
+    PartyToPartyRelationship p2pRelationship = new PartyToPartyRelationship();
+    p2pRelationship.setPartyRelationshipType(new PartyRelationshipType("some_other_relationship_id"));
+    
+    DTOControl control = mock(DTOControl.class);
+    
+    when(relatedParty.getPercentageValueOfOwnership()).thenReturn(30.0f);
+    
+    yourClass.processMSBALDirectOwnershipDetails(control, relatedParty, p2pRelationship);
+    
+    assertEquals(30.0f, p2pRelationship.getPercentageValueOfOwnership());
+}
+------------------
 private void processMSBALDirectOwnershipDetails(DTOControl control, P2PPartyToPartyRelationship relatedParty, 
     PartyToPartyRelationship p2pRelationship) {
 
