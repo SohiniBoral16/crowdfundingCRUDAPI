@@ -1,229 +1,120 @@
-@Test
-void testProcessMSBALDirectOwnershipDetails_withOtherRelationshipType() {
-    P2PPartyToPartyRelationship relatedParty = mock(P2PPartyToPartyRelationship.class);
-    PartyToPartyRelationship p2pRelationship = new PartyToPartyRelationship();
-    p2pRelationship.setPartyRelationshipType(new PartyRelationshipType("some_other_relationship_id"));
-    
-    DTOControl control = mock(DTOControl.class);
-    
-    when(relatedParty.getPercentageValueOfOwnership()).thenReturn(30.0f);
-    
-    yourClass.processMSBALDirectOwnershipDetails(control, relatedParty, p2pRelationship);
-    
-    assertEquals(30.0f, p2pRelationship.getPercentageValueOfOwnership());
-}
-------------------
-private void processMSBALDirectOwnershipDetails(DTOControl control, P2PPartyToPartyRelationship relatedParty, 
-    PartyToPartyRelationship p2pRelationship) {
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-    String relationshipIdOfMSBALDirectBeneficialOwnerOf = P2P_MSBAL_DIRECT_BENEFICIAL_OWNER_OF_RELATIONSHIP_ID;
-    
-    if (isDirectBeneficialOwnerRelationship(p2pRelationship.getPartyRelationshipType().getID(), relationshipIdOfMSBALDirectBeneficialOwnerOf)) {
-        handleDirectBeneficialOwnerRelationship(control, relatedParty, p2pRelationship);
-    }
-}
+public class RequestSourceFilter implements Filter {
+    private static final Logger logger = LoggerFactory.getLogger(RequestSourceFilter.class);
 
-private boolean isDirectBeneficialOwnerRelationship(String relationshipTypeId, String directBeneficialOwnerId) {
-    return directBeneficialOwnerId.equals(relationshipTypeId);
-}
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
+        String source = httpRequest.getHeader("X-Request-Source");
 
-private void handleDirectBeneficialOwnerRelationship(DTOControl control, P2PPartyToPartyRelationship relatedParty, 
-    PartyToPartyRelationship p2pRelationship) {
-
-    Optional.ofNullable(relatedParty.getPercentageValueOfOwnership()).ifPresentOrElse(percentageValueOfOwnership -> {
-        if (percentageValueOfOwnership > 100) {
-            throw new IllegalArgumentException("Ownership of MSBAL Direct Beneficiary must not be more than 100%");
+        if (source != null) {
+            switch (source) {
+                case "update":
+                    logger.info("Handling update relationship request");
+                    break;
+                case "bulk-update":
+                    logger.info("Handling bulk relationship update request");
+                    break;
+                case "clone":
+                    logger.info("Handling clone relationship request");
+                    break;
+                case "add":
+                    logger.info("Handling add relationship request");
+                    break;
+                default:
+                    logger.warn("Unknown request source: {}", source);
+                    break;
+            }
+        } else {
+            logger.warn("X-Request-Source header is missing");
         }
-        p2pRelationship.setPercentageValueOfOwnership(percentageValueOfOwnership);
-    }, () -> control.addNullAttribute("percentageValueOfOwnership"));
-}
------------------------------
-private void processMSBALDirectOwnershipDetails(DTOControl control, P2PPartyToPartyRelationship relatedParty, 
-    PartyToPartyRelationship p2pRelationship) {
 
-    String relationshipIdOfMSBALDirectBeneficialOwnerOf = P2P_MSBAL_DIRECT_BENEFICIAL_OWNER_OF_RELATIONSHIP_ID;
-    
-    if (isDirectBeneficialOwnerRelationship(p2pRelationship.getPartyRelationshipType().getID(), relationshipIdOfMSBALDirectBeneficialOwnerOf)) {
-        handleOwnershipPercentage(control, relatedParty, p2pRelationship);
-    } else {
-        p2pRelationship.setPercentageValueOfOwnership(relatedParty.getPercentageValueOfOwnership());
+        chain.doFilter(request, response);
     }
 
-    control.addNullAttribute("percentageValueOfOwnership");
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        // Initialization code if needed
+    }
+
+    @Override
+    public void destroy() {
+        // Cleanup code if needed
+    }
 }
+===============
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-private boolean isDirectBeneficialOwnerRelationship(String relationshipTypeId, String directBeneficialOwnerId) {
-    return directBeneficialOwnerId.equals(relationshipTypeId);
+@Configuration
+public class FilterConfig {
+    @Bean
+    public FilterRegistrationBean<RequestSourceFilter> loggingFilter() {
+        FilterRegistrationBean<RequestSourceFilter> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(new RequestSourceFilter());
+        registrationBean.addUrlPatterns("/updateRelationship/*");
+        return registrationBean;
+    }
 }
+======================
+import org.springframework.web.bind.annotation.*;
 
-private void handleOwnershipPercentage(DTOControl control, P2PPartyToPartyRelationship relatedParty, 
-    PartyToPartyRelationship p2pRelationship) {
+@RestController
+@RequestMapping("/updateRelationship")
+public class RelationshipController {
+    private static final Logger logger = LoggerFactory.getLogger(RelationshipController.class);
 
-    Optional.ofNullable(relatedParty.getPercentageValueOfOwnership()).ifPresentOrElse(percentageValueOfOwnership -> {
-        if (percentageValueOfOwnership > 100) {
-            throw new IllegalArgumentException("Ownership of MSBAL Direct Beneficiary must not be more than 100%");
+    @PostMapping
+    public ResponseEntity<String> updateRelationship(@RequestHeader("X-Request-Source") String source, @RequestBody RelationshipRequest request) {
+        switch (source) {
+            case "update":
+                logger.info("Processing update relationship request");
+                return handleUpdate(request);
+            case "bulk-update":
+                logger.info("Processing bulk relationship update request");
+                return handleBulkUpdate(request);
+            case "clone":
+                logger.info("Processing clone relationship request");
+                return handleClone(request);
+            case "add":
+                logger.info("Processing add relationship request");
+                return handleAdd(request);
+            default:
+                logger.warn("Unknown request source: {}", source);
+                return ResponseEntity.badRequest().body("Unknown request source");
         }
-        p2pRelationship.setPercentageValueOfOwnership(percentageValueOfOwnership);
-    }, () -> control.addNullAttribute("percentageValueOfOwnership"));
-}
----------------------------------------
-import static org.mockito.Mockito.*;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-public class YourClassTest {
-
-    private YourClass yourClass;
-    private DTOControl control;
-    private P2PPartyToPartyRelationship relatedParty;
-    private PartyToPartyRelationship p2pRelationship;
-
-    @Before
-    public void setUp() {
-        yourClass = new YourClass();
-        control = Mockito.mock(DTOControl.class);
-        relatedParty = Mockito.mock(P2PPartyToPartyRelationship.class);
-        p2pRelationship = Mockito.mock(PartyToPartyRelationship.class);
     }
 
-    @Test
-    public void testProcessMSBALDirectOwnershipDetails_withDirectBeneficialOwner() {
-        when(p2pRelationship.getPartyRelationshipType().getID())
-            .thenReturn("P2P_MSBAL_DIRECT_BENEFICIAL_OWNER_OF_RELATIONSHIP_ID");
-        when(relatedParty.getPercentageValueOfOwnership())
-            .thenReturn(50.0);
-
-        yourClass.processMSBALDirectOwnershipDetails(control, relatedParty, p2pRelationship);
-
-        verify(p2pRelationship).setPercentageValueOfOwnership(50.0);
+    // Define your handlers for different functionalities
+    private ResponseEntity<String> handleUpdate(RelationshipRequest request) {
+        logger.debug("Update details: {}", request);
+        return ResponseEntity.ok("Update successful");
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testProcessMSBALDirectOwnershipDetails_withOwnershipGreaterThan100() {
-        when(p2pRelationship.getPartyRelationshipType().getID())
-            .thenReturn("P2P_MSBAL_DIRECT_BENEFICIAL_OWNER_OF_RELATIONSHIP_ID");
-        when(relatedParty.getPercentageValueOfOwnership())
-            .thenReturn(150.0);
-
-        yourClass.processMSBALDirectOwnershipDetails(control, relatedParty, p2pRelationship);
+    private ResponseEntity<String> handleBulkUpdate(RelationshipRequest request) {
+        logger.debug("Bulk update details: {}", request);
+        return ResponseEntity.ok("Bulk update successful");
     }
 
-    @Test
-    public void testProcessMSBALDirectOwnershipDetails_withOtherRelationshipType() {
-        when(p2pRelationship.getPartyRelationshipType().getID())
-            .thenReturn("some_other_relationship_id");
-        when(relatedParty.getPercentageValueOfOwnership())
-            .thenReturn(30.0);
-
-        yourClass.processMSBALDirectOwnershipDetails(control, relatedParty, p2pRelationship);
-
-        verify(p2pRelationship).setPercentageValueOfOwnership(30.0);
+    private ResponseEntity<String> handleClone(RelationshipRequest request) {
+        logger.debug("Clone details: {}", request);
+        return ResponseEntity.ok("Clone successful");
     }
 
-    @Test
-    public void testProcessMSBALDirectOwnershipDetails_nullPercentageValue() {
-        when(p2pRelationship.getPartyRelationshipType().getID())
-            .thenReturn("P2P_MSBAL_DIRECT_BENEFICIAL_OWNER_OF_RELATIONSHIP_ID");
-        when(relatedParty.getPercentageValueOfOwnership())
-            .thenReturn(null);
-
-        yourClass.processMSBALDirectOwnershipDetails(control, relatedParty, p2pRelationship);
-
-        verify(control).addNullAttribute("percentageValueOfOwnership");
+    private ResponseEntity<String> handleAdd(RelationshipRequest request) {
+        logger.debug("Add details: {}", request);
+        return ResponseEntity.ok("Add successful");
     }
 }
-To test the private methods indirectly by testing the public method that calls them, you can structure your unit tests to ensure that the public method correctly invokes the private methods and handles the scenarios appropriately. You do not need to mock private methods directly. Instead, you will validate the behavior through the public interface.
-
-Let's write the test cases focusing on the public method `processMSBALDirectOwnershipDetails`, which calls the private methods indirectly.
-
-### JUnit Test Class for Public Method
-
-Here is an example of how to write unit tests for the `processMSBALDirectOwnershipDetails` method:
-
-```java
-import static org.mockito.Mockito.*;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-public class YourClassTest {
-
-    private YourClass yourClass;
-    private DTOControl control;
-    private P2PPartyToPartyRelationship relatedParty;
-    private PartyToPartyRelationship p2pRelationship;
-
-    @Before
-    public void setUp() {
-        yourClass = new YourClass();
-        control = Mockito.mock(DTOControl.class);
-        relatedParty = Mockito.mock(P2PPartyToPartyRelationship.class);
-        p2pRelationship = Mockito.mock(PartyToPartyRelationship.class);
-    }
-
-    @Test
-    public void testProcessMSBALDirectOwnershipDetails_withDirectBeneficialOwner() {
-        when(p2pRelationship.getPartyRelationshipType().getID())
-            .thenReturn("P2P_MSBAL_DIRECT_BENEFICIAL_OWNER_OF_RELATIONSHIP_ID");
-        when(relatedParty.getPercentageValueOfOwnership())
-            .thenReturn(50.0);
-
-        yourClass.processMSBALDirectOwnershipDetails(control, relatedParty, p2pRelationship);
-
-        verify(p2pRelationship).setPercentageValueOfOwnership(50.0);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testProcessMSBALDirectOwnershipDetails_withOwnershipGreaterThan100() {
-        when(p2pRelationship.getPartyRelationshipType().getID())
-            .thenReturn("P2P_MSBAL_DIRECT_BENEFICIAL_OWNER_OF_RELATIONSHIP_ID");
-        when(relatedParty.getPercentageValueOfOwnership())
-            .thenReturn(150.0);
-
-        yourClass.processMSBALDirectOwnershipDetails(control, relatedParty, p2pRelationship);
-    }
-
-    @Test
-    public void testProcessMSBALDirectOwnershipDetails_withOtherRelationshipType() {
-        when(p2pRelationship.getPartyRelationshipType().getID())
-            .thenReturn("some_other_relationship_id");
-        when(relatedParty.getPercentageValueOfOwnership())
-            .thenReturn(30.0);
-
-        yourClass.processMSBALDirectOwnershipDetails(control, relatedParty, p2pRelationship);
-
-        verify(p2pRelationship).setPercentageValueOfOwnership(30.0);
-    }
-
-    @Test
-    public void testProcessMSBALDirectOwnershipDetails_nullPercentageValue() {
-        when(p2pRelationship.getPartyRelationshipType().getID())
-            .thenReturn("P2P_MSBAL_DIRECT_BENEFICIAL_OWNER_OF_RELATIONSHIP_ID");
-        when(relatedParty.getPercentageValueOfOwnership())
-            .thenReturn(null);
-
-        yourClass.processMSBALDirectOwnershipDetails(control, relatedParty, p2pRelationship);
-
-        verify(control).addNullAttribute("percentageValueOfOwnership");
-    }
-}
-```
-
-### Explanation
-
-1. **Setup Mocks**: Initialize the objects using Mockito.
-2. **Test Cases**:
-    - **Direct Beneficial Owner**: Checks if the `setPercentageValueOfOwnership` method is called with the correct value when the relationship ID matches the expected constant.
-    - **Ownership Greater Than 100%**: Ensures an `IllegalArgumentException` is thrown for invalid ownership values.
-    - **Other Relationship Type**: Verifies handling of other relationship types and ensures the percentage value is set correctly.
-    - **Null Percentage Value**: Checks if the `addNullAttribute` method is called when the percentage value is `null`.
-
-### Next Steps
-
-**a.** Run the tests to verify they pass and ensure the correctness of your code.
-**b.** Add additional test cases as needed to cover more scenarios and edge cases.
-
-Would you like further assistance with setting up your testing environment or writing more specific tests?
