@@ -1,3 +1,70 @@
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class RequestLogFilter implements Filter {
+    private static final Logger logger = LoggerFactory.getLogger(RequestLogFilter.class);
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
+        String authenticatedUser = httpRequest.getHeader("x-ms-webstack-authenticated-user");
+        String feature = httpRequest.getHeader("x-feature");
+
+        if (feature != null) {
+            switch (feature) {
+                case "update-relation":
+                    logger.info("Handling update relationship request");
+                    break;
+                case "bulk-update":
+                    logger.info("Handling bulk relationship update request");
+                    break;
+                case "clone-relation":
+                    logger.info("Handling clone relationship request");
+                    break;
+                case "add-relation":
+                    logger.info("Handling add relationship request");
+                    break;
+                case "remove-relation":
+                    logger.info("Handling remove relationship request");
+                    break;
+                case "search-party":
+                    logger.info("Handling search party request");
+                    break;
+                default:
+                    logger.warn("Unknown feature: {}", feature);
+                    break;
+            }
+        } else {
+            logger.warn("X-Feature header is missing");
+        }
+
+        logger.info("Authenticated User: {}", authenticatedUser);
+        logger.info("Feature: {}", feature);
+
+        chain.doFilter(request, response);
+    }
+
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        // Initialization code if needed
+    }
+
+    @Override
+    public void destroy() {
+        // Cleanup code if needed
+    }
+}
+--------------------------------
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
