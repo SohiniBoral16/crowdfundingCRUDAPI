@@ -1,3 +1,85 @@
+@RestController
+@RequestMapping("/updateP2PRelationship")
+@Api(value = "P2P Relationship Management", tags = "P2P Relationship")
+public class P2PController {
+    private static final Logger logger = LoggerFactory.getLogger(P2PController.class);
+
+    @PostMapping
+    @ApiOperation(value = "Update or Clone P2P Relationship",
+                  notes = "Update or clone a P2P relationship based on the provided feature.")
+    public ResponseEntity<P2PPartyUpdateResponse> updateP2PRelationship(
+            HttpServletRequest request,
+            @RequestBody @ApiParam(value = "P2P Relationship update request body") P2PPartyUpdateRequest p2pUpdateRequest,
+            @RequestHeader("x-ms-webstack-authenticated-user") @ApiParam(value = "Authenticated user", required = true) String authenticatedUser,
+            @RequestHeader("x-feature") @ApiParam(value = "Feature type", required = true) String feature) throws P2PServiceException {
+
+        P2PPartyUpdateResponse response = new P2PPartyUpdateResponse();
+
+        switch (feature) {
+            case "update-relation":
+                logger.info("Processing update relationship request");
+                break;
+            case "clone-relation":
+                logger.info("Processing clone relationship request");
+                break;
+            case "add-relation":
+                logger.info("Processing add relationship request");
+                break;
+            case "remove-relation":
+                logger.info("Processing remove relationship request");
+                break;
+            case "search-party":
+                logger.info("Processing search party request");
+                break;
+            default:
+                logger.warn("Unknown feature: {}", feature);
+                return ResponseEntity.badRequest().body(response);
+        }
+
+        logger.info("Authenticated User: {}", authenticatedUser);
+        logger.info("Feature: {}", feature);
+
+        return handleRequest(request, p2pUpdateRequest, authenticatedUser);
+    }
+
+    private ResponseEntity<P2PPartyUpdateResponse> handleRequest(HttpServletRequest request,
+                                                                 P2PPartyUpdateRequest p2pUpdateRequest,
+                                                                 String authenticatedUser) throws P2PServiceException {
+        P2PPartyUpdateResponse response = new P2PPartyUpdateResponse();
+        try {
+            if (p2pUpdateRequest != null) {
+                logger.info("Updating P2P relationship attributes for the party {}", p2pUpdateRequest.getPartyID());
+                String userId = authenticatedUser != null ? authenticatedUser : AuthUtils.getAuthUser(request);
+                if (p2pUpdateRequest.getUserID() == null && userId != null) {
+                    p2pUpdateRequest.setUserID(userId);
+                }
+                logger.info("updateP2PRelationship called KEY={} SERVICE={} USER={}", 
+                            p2pUpdateRequest.getUserID(), p2pUpdateRequest.getPartyID(), "updateP2PRelationship");
+
+                if (userId == null) {
+                    response.setMessage("Unauthorized user");
+                    response.setStatus("FAILURE");
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+                }
+
+                logger.info("Update object before saving: {}", p2pUpdateRequest);
+                P2PPartyUpdateResponse updatePartyResponse = new P2PPartyUpdateResponse();  // Replace with actual transformation logic
+                logger.info("Update object after saving: {}", updatePartyResponse);
+                response = updatePartyResponse;
+                response.setStatus("SUCCESS");
+            }
+        } catch (Exception ex) {
+            logger.error("createP2PRelationship: Exception: ", ex);
+            response = new P2PPartyUpdateResponse();
+            response.setStatus("FAILURE");
+            response.setMessage(ex.getMessage());
+        }
+        return ResponseEntity.ok(response);
+    }
+}
+
+
+--------------------------------------
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
