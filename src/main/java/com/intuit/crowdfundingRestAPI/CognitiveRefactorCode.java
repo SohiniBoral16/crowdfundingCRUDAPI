@@ -1,3 +1,67 @@
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/updateP2PRelationship")
+public class P2PController {
+    private static final Logger logger = LoggerFactory.getLogger(P2PController.class);
+
+    @RequestMapping(value = "/", method = RequestMethod.POST)
+    public ResponseEntity<P2PPartyUpdateResponse> updateP2PRelationship(HttpServletRequest request,
+                                                                        @RequestBody P2PPartyUpdateRequest p2pUpdateRequest,
+                                                                        @RequestHeader("X-Request-Source") String source) throws P2PServiceException {
+        P2PPartyUpdateResponse response = new P2PPartyUpdateResponse();
+        switch (source) {
+            case "update":
+                logger.info("Processing update relationship request");
+                break;
+            case "clone":
+                logger.info("Processing clone relationship request");
+                break;
+            default:
+                logger.warn("Unknown request source: {}", source);
+                return ResponseEntity.badRequest().body(response);
+        }
+        return handleRequest(request, p2pUpdateRequest);
+    }
+
+    private ResponseEntity<P2PPartyUpdateResponse> handleRequest(HttpServletRequest request,
+                                                                 P2PPartyUpdateRequest p2pUpdateRequest) throws P2PServiceException {
+        P2PPartyUpdateResponse response = new P2PPartyUpdateResponse();
+        try {
+            if (p2pUpdateRequest != null) {
+                logger.info("Updating P2P relationship attributes for the party {}", p2pUpdateRequest.getPartyID());
+                String userId = AuthUtils.getAuthUser(request);
+                if (p2pUpdateRequest.getUserID() == null && userId != null) {
+                    p2pUpdateRequest.setUserID(userId);
+                }
+                logger.info("updateP2PRelationship called KEY={} SERVICE={} USER={}", 
+                            p2pUpdateRequest.getUserID(), p2pUpdateRequest.getPartyID(), "updateP2PRelationship");
+
+                if (Objects.nonNull(userId)) {
+                    response.setMessage(ErrorMessages.UNAUTHORIZED_USER_MESSAGE());
+                    response.setStatus(Status.FAILURE);
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+                }
+
+                logger.info("Update object before saving: {}", p2pUpdateRequest);
+                P2PPartyUpdateResponse updatePartyResponse = p2POMTransformer.toUpdatePartyRequest(p2pUpdateRequest);
+                logger.info("Update object after saving: {}", updatePartyResponse);
+                response = updatePartyResponse;
+                response.setStatus(Status.SUCCESS);
+            }
+        } catch (Exception ex) {
+            logger.error("createP2PRelationship: Exception: ", ex);
+            response = new P2PPartyUpdateResponse();
+            response.setStatus(Status.FAILURE);
+            response.setMessage(ex.getMessage());
+        }
+        return ResponseEntity.ok(response);
+    }
+}
+========================
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
