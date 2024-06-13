@@ -1,4 +1,48 @@
 
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
+@WebMvcTest(P2PController.class)
+public class P2PControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private CacheServerPartyClient cacheServerPartyClient;
+
+    @Test
+    void updateP2PRelationship_whenExceptionThrown_shouldReturnFailureResponse() throws Exception {
+        P2PPartyUpdateRequest request = new P2PPartyUpdateRequest();
+        request.setPartyID("BBB024552490");
+        // Set other fields as needed
+
+        when(cacheServerPartyClient.update(any(UpdatePartyRequest.class)))
+                .thenThrow(new RuntimeException("Test Exception"));
+
+        String requestStr = new ObjectMapper().writeValueAsString(request);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/updateP2PRelationship")
+                .content(requestStr)
+                .contentType(APPLICATION_JSON)
+                .accept(APPLICATION_JSON)
+                .header("x-feature", "default-feature"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("FAILURE"))
+                .andExpect(jsonPath("$.message").value("Test Exception"));
+    }
+}
+
+
+-----------------_-------
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
