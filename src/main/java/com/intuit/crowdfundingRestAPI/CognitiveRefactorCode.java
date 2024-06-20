@@ -1,386 +1,71 @@
-The choice between using a `StringBuilder` and a hardcoded string for logging messages depends on several factors. Here are the pros and cons of each approach, along with the justification for selecting one over the other:
+To add the JaCoCo plugin in an IntelliJ IDEA project, you'll need to update your `build.gradle` file and configure IntelliJ IDEA to use it. Here's how you can do it:
 
-### Using `StringBuilder`
-**Pros:**
-1. **Performance:** `StringBuilder` is more efficient when concatenating multiple strings, especially in a loop or when dealing with large amounts of data.
-2. **Maintainability:** It makes it easier to append different pieces of information conditionally and in a readable manner.
-3. **Flexibility:** If the log message format needs to change, it can be done easily by modifying the `StringBuilder` code.
-4. **Readability:** Each part of the log message can be clearly seen, making the code easier to understand and maintain.
+### Step 1: Update `build.gradle`
 
-**Cons:**
-1. **Complexity:** For simple log messages, using `StringBuilder` can be overkill and make the code look more complex than necessary.
-2. **Verbosity:** It adds more lines of code, which might not be necessary for simple concatenations.
+Add the JaCoCo plugin and configure it in your `build.gradle` file:
 
-### Using Hardcoded String
-**Pros:**
-1. **Simplicity:** Directly using a hardcoded string is straightforward and less verbose.
-2. **Readability:** For short and simple log messages, a hardcoded string can be more readable.
+```groovy
+plugins {
+    id 'org.springframework.boot' version '3.0.0'
+    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    id 'java'
+    id 'jacoco'
+}
 
-**Cons:**
-1. **Performance:** Concatenating strings using the `+` operator in a loop or multiple times can be less efficient compared to using `StringBuilder`.
-2. **Maintainability:** If the message format changes frequently, it is harder to manage and update hardcoded strings.
-3. **Flexibility:** Less flexible when dealing with conditional message parts or formatting.
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '17'
 
-### Justification
-In the context of logging complex messages, especially where different parts of the message might be conditional or the message is built from multiple components, using `StringBuilder` is generally the better approach. It enhances performance, readability, and maintainability of the code.
+repositories {
+    mavenCentral()
+}
 
-Here’s a potential reply to the comment:
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    runtimeOnly 'com.h2database:h2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
 
----
+test {
+    useJUnitPlatform()
+}
 
-**Reply:**
+bootJar {
+    mainClassName = 'com.example.demo.DemoApplication'
+}
 
-Using `StringBuilder` for constructing log messages is more efficient and maintainable, especially when dealing with multiple pieces of data or conditional log parts. It ensures better performance as string concatenation in Java using the `+` operator can create multiple intermediate String objects, leading to unnecessary overhead. Additionally, `StringBuilder` makes the code more readable and easier to update if the log message format changes in the future.
+jacoco {
+    toolVersion = "0.8.8" // Use the appropriate version of JaCoCo
+}
 
-For example, in our case, `StringBuilder` allows us to clearly append various parts of the log message, making it straightforward to modify or extend:
-
-```java
-StringBuilder detailedLogMessage = new StringBuilder();
-detailedLogMessage.append("Username: ").append(username).append("\n")
-    .append("Feature: ").append(feature).append("\n")
-    .append("Authenticated User: ").append(authenticatedUser).append("\n")
-    .append("Request Payload: ").append(jsonRequest).append("\n")
-    .append("Response Content: ").append(jsonResponse).append("\n")
-    .append("Request ID: ").append(id).append("\n");
+jacocoTestReport {
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
 ```
 
-This approach provides clear separation and flexibility, improving both performance and maintainability of the code.
+### Step 2: Sync Gradle Project
 
----
+After updating `build.gradle`, you need to refresh your Gradle project in IntelliJ IDEA:
 
-This response provides a clear justification for why `StringBuilder` is preferable in this scenario.
+1. Open your project in IntelliJ IDEA.
+2. In the right-hand side panel, find the "Gradle" tool window.
+3. Click the "Refresh" button to sync the project with the updated `build.gradle` file.
 
------------------
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+### Step 3: Run Tests with JaCoCo
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+To generate the JaCoCo test coverage report:
 
-@WebMvcTest(P2PController.class)
-public class P2PControllerTest {
+1. Run your tests using Gradle tasks. You can do this by opening the "Gradle" tool window, navigating to `Tasks > verification`, and double-clicking `test`.
+2. After running the tests, generate the JaCoCo report by double-clicking `jacocoTestReport` in the same "Gradle" tool window.
 
-    @Autowired
-    private MockMvc mockMvc;
+### Step 4: View JaCoCo Reports
 
-    @MockBean
-    private CacheServerPartyClient cacheServerPartyClient;
+The generated JaCoCo reports will be available in the `build/reports/jacoco/test/html` directory. You can open the `index.html` file in a web browser to view the test coverage report.
 
-    @Test
-    void updateP2PRelationship_whenExceptionThrown_shouldReturnFailureResponse() throws Exception {
-        P2PPartyUpdateRequest request = new P2PPartyUpdateRequest();
-        request.setPartyID("BBB024552490");
-        // Set other fields as needed
-
-        when(cacheServerPartyClient.update(any(UpdatePartyRequest.class)))
-                .thenThrow(new RuntimeException("Test Exception"));
-
-        String requestStr = new ObjectMapper().writeValueAsString(request);
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/updateP2PRelationship")
-                .content(requestStr)
-                .contentType(APPLICATION_JSON)
-                .accept(APPLICATION_JSON)
-                .header("x-feature", "default-feature"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("FAILURE"))
-                .andExpect(jsonPath("$.message").value("Test Exception"));
-    }
-}
-
-
------------------_-------
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.filter.GenericFilterBean;
-import org.springframework.web.util.ContentCachingRequestWrapper;
-import org.springframework.web.util.ContentCachingResponseWrapper;
-
-@Service
-public class RequestLogFilter extends GenericFilterBean {
-    private static final Logger logger = LoggerFactory.getLogger(RequestLogFilter.class);
-
-    private static final String NO_RESPONSE_CONTENT = "No Response Content Found :( ";
-    private static final String MESSAGE_TEMPLATE = "\n==================\nRequest Payload:\n{}\n==================\nResponse Content:\n{}\n==================";
-
-    private static final AtomicInteger counter = new AtomicInteger(0);
-
-    @Value("${request.logging.enabled:true}")
-    private boolean enableRequestLogging;
-
-    @Value("${request.logging.skip.paths:api-docs,swagger}")
-    private List<String> skipPaths;
-
-    @Override
-    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {
-        HttpServletRequest request = (HttpServletRequest) req;
-        HttpServletResponse response = (HttpServletResponse) res;
-
-        String feature = request.getHeader("x-feature");
-        String authenticatedUser = request.getHeader("x-ms-webstack-authenticated-user");
-        String requestUri = request.getRequestURI();
-        String method = request.getMethod();
-
-        StringBuilder logMessage = new StringBuilder();
-        appendIfNotNull(logMessage, "Feature", feature);
-        appendIfNotNull(logMessage, "Authenticated User", authenticatedUser);
-        appendIfNotNull(logMessage, "Method", method);
-        appendIfNotNull(logMessage, "URI", requestUri);
-
-        logger.info(logMessage.toString());
-
-        if (!enableRequestLogging || skipPaths.stream().anyMatch(requestUri::contains)) {
-            chain.doFilter(request, response);
-            return;
-        }
-
-        int id = counter.incrementAndGet();
-        Instant startTs = Instant.now();
-        
-        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
-        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
-
-        chain.doFilter(requestWrapper, responseWrapper);
-
-        Instant endTs = Instant.now();
-        long timeTaken = Duration.between(startTs, endTs).toMillis();
-
-        String requestBody = new String(requestWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
-        String responseBody = new String(responseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
-
-        StringBuilder detailedLogMessage = new StringBuilder();
-        detailedLogMessage.append("\n==================\n");
-        appendIfNotNull(detailedLogMessage, "Request Payload", requestBody);
-        detailedLogMessage.append("\n==================\n");
-        appendIfNotNull(detailedLogMessage, "Response Content", responseBody);
-        detailedLogMessage.append("\n==================\n");
-        appendIfNotNull(detailedLogMessage, "Request ID", String.valueOf(id));
-        appendIfNotNull(detailedLogMessage, "Time Taken", timeTaken + " ms");
-        appendIfNotNull(detailedLogMessage, "Status", String.valueOf(response.getStatus()));
-        appendIfNotNull(detailedLogMessage, "Feature", feature);
-        appendIfNotNull(detailedLogMessage, "Authenticated User", authenticatedUser);
-        appendIfNotNull(detailedLogMessage, "Method", method);
-        appendIfNotNull(detailedLogMessage, "URI", requestUri);
-
-        logger.info(detailedLogMessage.toString());
-
-        responseWrapper.copyBodyToResponse();
-    }
-
-    private void appendIfNotNull(StringBuilder sb, String fieldName, String value) {
-        Optional.ofNullable(value)
-                .ifPresent(val -> sb.append(fieldName).append(": ").append(val).append(", "));
-    }
-}
--------_------------
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.filter.GenericFilterBean;
-import org.springframework.web.util.ContentCachingRequestWrapper;
-import org.springframework.web.util.ContentCachingResponseWrapper;
-
-@Service
-public class RequestLogFilter extends GenericFilterBean {
-    private static final Logger logger = LoggerFactory.getLogger(RequestLogFilter.class);
-
-    private static final String NO_RESPONSE_CONTENT = "No Response Content Found :( ";
-    private static final String MESSAGE_TEMPLATE = "\n==================\nRequest Payload:\n{}\n==================\nResponse Content:\n{}\n==================";
-
-    private static final AtomicInteger counter = new AtomicInteger(0);
-
-    @Value("${request.logging.enabled:true}")
-    private boolean enableRequestLogging;
-
-    @Value("${request.logging.skip.paths:api-docs,swagger}")
-    private List<String> skipPaths;
-
-    @Override
-    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {
-        HttpServletRequest request = (HttpServletRequest) req;
-        HttpServletResponse response = (HttpServletResponse) res;
-
-        String feature = request.getHeader("x-feature");
-        String authenticatedUser = request.getHeader("x-ms-webstack-authenticated-user");
-        String requestUri = request.getRequestURI();
-        String method = request.getMethod();
-
-        StringBuilder logMessage = new StringBuilder();
-        appendIfNotNull(logMessage, "Feature", feature);
-        appendIfNotNull(logMessage, "Authenticated User", authenticatedUser);
-        appendIfNotNull(logMessage, "Method", method);
-        appendIfNotNull(logMessage, "URI", requestUri);
-
-        logger.info(logMessage.toString());
-
-        if (!enableRequestLogging || skipPaths.stream().anyMatch(requestUri::contains)) {
-            chain.doFilter(request, response);
-            return;
-        }
-
-        int id = counter.incrementAndGet();
-        Instant startTs = Instant.now();
-        
-        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
-        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
-
-        chain.doFilter(requestWrapper, responseWrapper);
-
-        Instant endTs = Instant.now();
-        long timeTaken = Duration.between(startTs, endTs).toMillis();
-
-        String requestBody = new String(requestWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
-        String responseBody = new String(responseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
-
-        StringBuilder detailedLogMessage = new StringBuilder();
-        detailedLogMessage.append("\n==================\n");
-        detailedLogMessage.append("Request Payload:\n").append(requestBody).append("\n");
-        detailedLogMessage.append("==================\n");
-        detailedLogMessage.append("Response Content:\n").append(responseBody).append("\n");
-        detailedLogMessage.append("==================\n");
-        detailedLogMessage.append("Request ID: ").append(id).append(", ");
-        detailedLogMessage.append("Time Taken: ").append(timeTaken).append(" ms, ");
-        detailedLogMessage.append("Status: ").append(response.getStatus()).append(", ");
-        detailedLogMessage.append("Feature: ").append(feature).append(", ");
-        detailedLogMessage.append("Authenticated User: ").append(authenticatedUser).append(", ");
-        detailedLogMessage.append("Method: ").append(method).append(", ");
-        detailedLogMessage.append("URI: ").append(requestUri);
-
-        logger.info(detailedLogMessage.toString());
-
-        responseWrapper.copyBodyToResponse();
-    }
-
-    private void appendIfNotNull(StringBuilder sb, String fieldName, String value) {
-        if (value != null) {
-            sb.append(fieldName).append(": ").append(value).append(", ");
-        }
-    }
-}
-----------------
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.filter.GenericFilterBean;
-import org.springframework.web.util.ContentCachingRequestWrapper;
-import org.springframework.web.util.ContentCachingResponseWrapper;
-
-@Service
-public class RequestLogFilter extends GenericFilterBean {
-    private static final Logger logger = LoggerFactory.getLogger(RequestLogFilter.class);
-
-    private static final String NO_RESPONSE_CONTENT = "No Response Content Found :( ";
-    private static final String MESSAGE_TEMPLATE = "\n==================\nRequest Payload:\n{}\n==================\nResponse Content:\n{}\n==================";
-
-    private static final AtomicInteger counter = new AtomicInteger(0);
-
-    @Value("${request.logging.enabled:true}")
-    private boolean enableRequestLogging;
-
-    @Value("${request.logging.skip.paths:api-docs,swagger}")
-    private List<String> skipPaths;
-
-    @Override
-    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {
-        HttpServletRequest request = (HttpServletRequest) req;
-        HttpServletResponse response = (HttpServletResponse) res;
-
-        String feature = request.getHeader("x-feature");
-        String authenticatedUser = request.getHeader("x-ms-webstack-authenticated-user");
-        String requestUri = request.getRequestURI();
-        String method = request.getMethod();
-
-        StringBuilder logMessage = new StringBuilder();
-        appendIfNotNull(logMessage, "Feature", feature);
-        appendIfNotNull(logMessage, "Authenticated User", authenticatedUser);
-        appendIfNotNull(logMessage, "Method", method);
-        appendIfNotNull(logMessage, "URI", requestUri);
-
-        logger.info(logMessage.toString());
-
-        if (!enableRequestLogging || skipPaths.stream().anyMatch(requestUri::contains)) {
-            chain.doFilter(request, response);
-            return;
-        }
-
-        int id = counter.incrementAndGet();
-        Instant startTs = Instant.now();
-        
-        ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
-        ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
-
-        chain.doFilter(requestWrapper, responseWrapper);
-
-        Instant endTs = Instant.now();
-        long timeTaken = Duration.between(startTs, endTs).toMillis();
-
-        String requestBody = new String(requestWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
-        String responseBody = new String(responseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
-
-        logger.info(MESSAGE_TEMPLATE, requestBody, responseBody);
-        logger.info("Request ID: {}, Time Taken: {} ms, Status: {}", id, timeTaken, response.getStatus());
-
-        responseWrapper.copyBodyToResponse();
-    }
-
-    private void appendIfNotNull(StringBuilder sb, String fieldName, String value) {
-        if (value != null) {
-            sb.append(fieldName).append(": ").append(value).append(", ");
-        }
-    }
-}
+By following these steps, you will have integrated the JaCoCo plugin into your Spring Boot project and configured it in IntelliJ IDEA.
