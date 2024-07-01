@@ -1,3 +1,10 @@
+
+ext.versions = new Properties()
+file('versions.properties').withInputStream { stream ->
+    ext.versions.load(stream)
+}
+
+
 import java.util.Properties
 
 // Load versions from the properties file
