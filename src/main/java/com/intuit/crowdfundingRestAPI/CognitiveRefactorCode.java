@@ -1,3 +1,69 @@
+import java.util.Properties
+
+// Load versions from the properties file
+def loadProperties(fileName) {
+    def properties = new Properties()
+    file(fileName).withInputStream { stream ->
+        properties.load(stream)
+    }
+    return properties
+}
+
+def versions = loadProperties('versions.properties')
+
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:${versions['springBootVersion']}"
+        classpath "org.jsonschema2pojo:jsonschema2pojo-gradle-plugin:${versions['jsonSchema2PojoVersion']}"
+    }
+}
+
+plugins {
+    id 'application'
+    id 'org.springframework.boot' version "${versions['springBootVersion']}"
+    id 'io.spring.dependency-management' version "${versions['dependencyManagementVersion']}"
+    id 'java'
+}
+
+apply plugin: 'jsonschema2pojo'
+
+jacoco {
+    toolVersion = "0.8.7"
+}
+
+group = 'com.ms.clientData'
+version = '1.0'
+sourceCompatibility = '11'
+
+ext {
+    set('springCloudVersion', '2020.0.2')
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+apply from: file("${rootProject.projectDir}/docker.gradle")
+
+jsonSchema2Pojo {
+    source = files('src/main/resources/schemas') // Path to your JSON Schema files
+    targetPackage = 'com.example.generated'      // Package for the generated classes
+}
+
+
+
+
+
+
 // Load versions from the properties file
 def versions = new Properties()
 file('versions.properties').withInputStream { stream ->
