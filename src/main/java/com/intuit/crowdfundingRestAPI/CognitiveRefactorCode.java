@@ -3,22 +3,22 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.springframework.boot:spring-boot-gradle-plugin:${versions['springBootVersion']}"
-        classpath "org.jsonschema2pojo:jsonschema2pojo-gradle-plugin:${versions['jsonSchema2PojoVersion']}"
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+        classpath "org.jsonschema2pojo:jsonschema2pojo-gradle-plugin:${jsonSchema2PojoVersion}"
     }
 }
 
 plugins {
     id 'application'
-    id 'org.springframework.boot' version "${versions['springBootVersion']}"
-    id 'io.spring.dependency-management' version "${versions['dependencyManagementVersion']}"
+    id 'org.springframework.boot' version "${springBootVersion}"
+    id 'io.spring.dependency-management' version "${dependencyManagementVersion}"
     id 'java'
 }
 
 apply plugin: 'jsonschema2pojo'
 
 jacoco {
-    toolVersion = "${versions['jacocoVersion']}"
+    toolVersion = "${jacocoVersion}"
 }
 
 group = 'com.ms.clientData'
@@ -26,7 +26,7 @@ version = '1.0'
 sourceCompatibility = '11'
 
 ext {
-    set('springCloudVersion', "${versions['springCloudVersion']}")
+    set('springCloudVersion', "${springCloudVersion}")
 }
 
 repositories {
