@@ -3,14 +3,9 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'org.jsonschema2pojo:jsonschema2pojo-gradle-plugin:1.1.0'
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:${versions['springBootVersion']}"
+        classpath "org.jsonschema2pojo:jsonschema2pojo-gradle-plugin:${versions['jsonSchema2PojoVersion']}"
     }
-}
-
-// Load versions from the properties file and store them in ext
-ext.versions = new Properties()
-file('versions.properties').withInputStream { stream ->
-    ext.versions.load(stream)
 }
 
 plugins {
