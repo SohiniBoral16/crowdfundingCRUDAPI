@@ -13,9 +13,13 @@ plugins {
     id 'org.springframework.boot' version "${springBootVersion}"
     id 'io.spring.dependency-management' version "${dependencyManagementVersion}"
     id 'java'
+    id 'com.ms.gradle.train-metadata' version "${trainMetadataVersion}"
+    id 'com.ms.gradle.afs-install' version "${afsInstallVersion}"
+    id 'com.ms.gradle.runscripts' version "${runScriptsVersion}"
+    id 'jacoco'
+    id 'org.barfuin.gradle.jacocolog' version "${jacocoLogVersion}"
+    id 'com.google.cloud.tools.jib' version "${jibVersion}"
 }
-
-apply plugin: 'jsonschema2pojo'
 
 jacoco {
     toolVersion = "${jacocoVersion}"
