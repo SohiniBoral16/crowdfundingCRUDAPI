@@ -1,53 +1,28 @@
-import java.util.List;
+@RestController
+@RequestMapping("/api")
+public class RelationshipVisualizationController {
 
-public class Party {
-    private String partyId;
-    private String parentId;
-    private String partyName;
-    private String validationStatus;
-    private String countryOfOrganization;
-    private String legalForm;
-    private String partyAlias;
-    private String legalName;
-    private String countryOfDomicile;
-    private String dateOfBirth;
-    private String dateOfIncorporation;
-    private List<Identifier> countrySpecificIdentifiers;
-    private List<Relationship> relationships;
+    private final RelationshipVisualizationService relationshipVisualizationService;
 
-    // Getters and setters
-    // Constructors
-}
+    public RelationshipVisualizationController(RelationshipVisualizationService relationshipVisualizationService) {
+        this.relationshipVisualizationService = relationshipVisualizationService;
+    }
 
-class Identifier {
-    private String identifierId;
-    private String identifierName;
+    @GetMapping("/relationship-visualization/{id}")
+    public ResponseEntity<RelationshipVisualization> getRelationshipVisualization(
+            @PathVariable("id") String id, 
+            HttpServletRequest request) throws ServiceException {
 
-    // Getters and setters
-    // Constructors
-}
+        try {
+            LOG.info("getRelationshipVisualization called with ID={}", id);
+            AuthUtils.getAuthUser(request);
 
-class Relationship {
-    private String parentId;
-    private List<RelationshipDetail> relationshipDetails;
+            RelationshipVisualization relationshipVisualization = relationshipVisualizationService.getRelationshipVisualizationById(id);
 
-    // Getters and setters
-    // Constructors
-}
-
-class RelationshipDetail {
-    private String relationshipTypeName;
-    private RelationshipAttribute relationshipAttributes;
-
-    // Getters and setters
-    // Constructors
-}
-
-class RelationshipAttribute {
-    private boolean significantInfluenceOverIndicator;
-    private String indirectOwnershipValue;
-    private String percentageValue;
-
-    // Getters and setters
-    // Constructors
+            return ResponseEntity.ok(relationshipVisualization);
+        } catch (Exception ex) {
+            LOG.error("Error fetching relationship visualization for ID={}", id, ex);
+            throw new ServiceException("Failed to get relationship visualization", ex);
+        }
+    }
 }
