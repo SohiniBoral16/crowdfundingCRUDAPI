@@ -1,3 +1,91 @@
+private static PartyVisualization createPartyVisualization(Party party) {
+    if (party == null) {
+        return null;
+    }
+
+    PartyVisualization partyDetails = new PartyVisualization();
+
+    // Use Optional to handle potential null values
+    partyDetails.setPartyType(Optional.ofNullable(party.getPartyType()).map(Enum::name).orElse(null));
+    partyDetails.setPartyName(Optional.ofNullable(party.getPartyNameList())
+                                      .filter(names -> !names.isEmpty())
+                                      .map(names -> names.get(0).getName())
+                                      .orElse(null));
+    partyDetails.setAlias(Optional.ofNullable(party.getPartyAliasList())
+                                  .filter(aliases -> !aliases.isEmpty())
+                                  .map(aliases -> aliases.get(0).getAlias())
+                                  .orElse(null));
+    partyDetails.setCountryOfDomicile(Optional.ofNullable(party.getCountryOfDomicile()).map(Country::getName).orElse(null));
+    partyDetails.setCountryOfOrganization(Optional.ofNullable(party.getCountryOfOrganization()).map(Country::getName).orElse(null));
+    partyDetails.setDateOfBirth(Optional.ofNullable(party.getDateOfBirth()).map(LocalDate::toString).orElse(null));
+    partyDetails.setIncorporationDate(Optional.ofNullable(party.getFormationDate()).map(LocalDate::toString).orElse(null));
+    partyDetails.setLegalForm(Optional.ofNullable(party.getLegalForm()).map(Form::getName).orElse(null));
+    partyDetails.setValidationStatus(Optional.ofNullable(party.getPartyValidationStatus()).map(Status::getName).orElse(null));
+
+    // Populate other fields similarly
+    // ...
+
+    // Set country-specific identifiers
+    partyDetails.setCountrySpecificIdentifiers(getCountrySpecificIdentifier(party));
+
+    return partyDetails;
+}
+
+Reviewing the `getPartyDto` method:
+
+### Observations and Recommendations:
+
+1. **Null Checks**: Ensure null checks are concise and handle all potential null pointers. If `party` or any of its fields can be null, consider using `Optional` to handle null values gracefully.
+2. **Method Naming**: The method name `getPartyDto` suggests it returns a DTO object, which it does. However, if the DTO class is `PartyVisualization`, consider renaming the method to `createPartyVisualization` for clarity.
+3. **Magic Numbers**: Avoid magic numbers like `.get(0)`. If the list is expected to have only one element, consider verifying the list size or refactoring the method that constructs the list.
+4. **Field Assignment**: The current approach is clear, but consider using a builder pattern if the `PartyVisualization` class supports it. This can make the code more readable and maintainable.
+
+### Updated Code Example:
+```java
+private static PartyVisualization createPartyVisualization(Party party) {
+    if (party == null) {
+        return null;
+    }
+
+    PartyVisualization partyDetails = new PartyVisualization();
+
+    // Use Optional to handle potential null values
+    partyDetails.setPartyType(Optional.ofNullable(party.getPartyType()).map(Enum::name).orElse(null));
+    partyDetails.setPartyName(Optional.ofNullable(party.getPartyNameList())
+                                      .filter(names -> !names.isEmpty())
+                                      .map(names -> names.get(0).getName())
+                                      .orElse(null));
+    partyDetails.setAlias(Optional.ofNullable(party.getPartyAliasList())
+                                  .filter(aliases -> !aliases.isEmpty())
+                                  .map(aliases -> aliases.get(0).getAlias())
+                                  .orElse(null));
+    partyDetails.setCountryOfDomicile(Optional.ofNullable(party.getCountryOfDomicile()).map(Country::getName).orElse(null));
+    partyDetails.setCountryOfOrganization(Optional.ofNullable(party.getCountryOfOrganization()).map(Country::getName).orElse(null));
+    partyDetails.setDateOfBirth(Optional.ofNullable(party.getDateOfBirth()).map(LocalDate::toString).orElse(null));
+    partyDetails.setIncorporationDate(Optional.ofNullable(party.getFormationDate()).map(LocalDate::toString).orElse(null));
+    partyDetails.setLegalForm(Optional.ofNullable(party.getLegalForm()).map(Form::getName).orElse(null));
+    partyDetails.setValidationStatus(Optional.ofNullable(party.getPartyValidationStatus()).map(Status::getName).orElse(null));
+
+    // Populate other fields similarly
+    // ...
+
+    // Set country-specific identifiers
+    partyDetails.setCountrySpecificIdentifiers(getCountrySpecificIdentifier(party));
+
+    return partyDetails;
+}
+```
+
+### Summary of Changes:
+
+1. **Use of `Optional`**: Wrapped potential null values in `Optional` to streamline null checks and default values.
+2. **Improved Method Naming**: Renamed the method to `createPartyVisualization` for clarity.
+3. **Validation**: Ensured list accesses are guarded against potential null pointers or empty lists.
+
+These changes enhance the code's readability, maintainability, and robustness against null pointer exceptions.
+
+
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
