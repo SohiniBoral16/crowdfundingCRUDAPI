@@ -1,4 +1,37 @@
 
+private static PartyVisualization createPartyVisualization(Party party) {
+    if (party == null) {
+        return null;
+    }
+
+    PartyVisualization partyDetails = new PartyVisualization();
+
+    // Use Optional to handle potential null values
+    partyDetails.setPartyType(Optional.ofNullable(party.getPartyType()).map(Enum::name).orElse(null));
+
+    partyDetails.setPartyName(party.getPartyNameList() != null && !party.getPartyNameList().isEmpty() ?
+            party.getPartyNameList().get(0).getName() : null);
+
+    partyDetails.setAlias(party.getPartyAliasList() != null && !party.getPartyAliasList().isEmpty() ?
+            party.getPartyAliasList().get(0).getAlias() : null);
+
+    partyDetails.setCountryOfDomicile(Optional.ofNullable(party.getCountryOfDomicile()).map(Country::getName).orElse(null));
+    partyDetails.setCountryOfOrganization(Optional.ofNullable(party.getCountryOfOrganization()).map(Country::getName).orElse(null));
+    partyDetails.setDateOfBirth(Optional.ofNullable(party.getDateOfBirth()).map(LocalDate::toString).orElse(null));
+    partyDetails.setIncorporationDate(Optional.ofNullable(party.getFormationDate()).map(LocalDate::toString).orElse(null));
+    partyDetails.setLegalForm(Optional.ofNullable(party.getLegalForm()).map(Form::getName).orElse(null));
+    partyDetails.setValidationStatus(Optional.ofNullable(party.getPartyValidationStatus()).map(Status::getName).orElse(null));
+
+    // Populate other fields similarly
+    // ...
+
+    // Set country-specific identifiers
+    partyDetails.setCountrySpecificIdentifiers(getCountrySpecificIdentifier(party));
+
+    return partyDetails;
+}
+
+
 private void processPartyHierarchy(Party rootParty, Party currentParty, String parentPartyId, List<PartyVisualization> partyVisualizationList) {
     if (currentParty == null) {
         return;
