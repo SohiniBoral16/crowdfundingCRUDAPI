@@ -1,3 +1,67 @@
+
+private void processPartyHierarchy(Party rootParty, Party currentParty, String parentPartyId, List<PartyVisualization> partyVisualizationList) {
+    if (currentParty == null) {
+        return;
+    }
+
+    // Add the main party to the flat list
+    PartyVisualization partyDetails = createPartyVisualization(currentParty);
+    partyDetails.setParentId(parentPartyId);
+    partyVisualizationList.add(partyDetails);
+
+    List<RelationshipDetails> relationshipDetailList = new ArrayList<>();
+
+    if (rootParty != null && rootParty.getRelatedPartyList() != null) {
+        List<PartyToPartyRelationship> relatedPartyList = rootParty.getRelatedPartyList().stream()
+            .filter(relatedParty -> relatedParty.getRoleInParty().getPartyID().equals(currentParty.getPartyID()))
+            .collect(Collectors.toList());
+
+        for (PartyToPartyRelationship partyRelationship : relatedPartyList) {
+            if (checkOwnershipType(partyRelationship.getPartyRelationshipType().getName())) {
+                RelationshipDetails relationshipDetail = createRelationshipDetails(partyRelationship);
+                relationshipDetailList.add(relationshipDetail);
+            }
+        }
+    }
+
+    // Convert the relationships into flatList and add them to the PartyDTO
+    if (currentParty.getRelatedPartyList() != null) {
+        for (PartyToPartyRelationship partyRelationship : currentParty.getRelatedPartyList()) {
+            Party relatedParty = partyRelationship.getRoleToParty();
+            if (relatedParty != null) {
+                List<String> existingParties = partyVisualizationList.stream()
+                    .map(PartyVisualization::getPartyID)
+                    .collect(Collectors.toList());
+
+                if (!existingParties.contains(relatedParty.getPartyID())) {
+                    processPartyHierarchy(rootParty, relatedParty, currentParty.getPartyID(), partyVisualizationList);
+                }
+            }
+        }
+    }
+
+    List<PartyRelationship> partyRelationships = new ArrayList<>();
+    PartyRelationship partyRelationship = new PartyRelationship();
+    partyRelationship.setRelationships(relationshipDetailList);
+    partyRelationships.add(partyRelationship);
+    partyDetails.setPartyRelationships(partyRelationships);
+}
+
+// Helper methods for creating PartyVisualization and RelationshipDetails
+private PartyVisualization createPartyVisualization(Party party) {
+    // Your implementation for creating PartyVisualization
+    // ...
+}
+
+private RelationshipDetails createRelationshipDetails(PartyToPartyRelationship partyRelationship) {
+    // Your implementation for creating RelationshipDetails
+    // ...
+}
+
+
+
+--------------
+
 private static PartyVisualization createPartyVisualization(Party party) {
     if (party == null) {
         return null;
