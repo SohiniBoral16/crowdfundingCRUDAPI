@@ -1,3 +1,57 @@
+
+package com.yourpackage;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
+
+@WebMvcTest(RelationshipVisualizationController.class)
+public class RelationshipVisualizationControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private RelationshipVisualizationService relationshipVisualizationService;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testGetRelationshipVisualizationWithException() throws Exception {
+        // Mocking the service to throw an exception
+        when(relationshipVisualizationService.getPartyVisualizationById(any(String.class)))
+                .thenThrow(new RuntimeException("Service exception"));
+
+        // Perform the GET request and verify the response
+        mockMvc.perform(get("/visualization/hierarchy/{mainPartyId}", "testMainPartyId")
+                .header("feature", "testFeature"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(result -> {
+                    Throwable resolvedException = result.getResolvedException();
+                    assert resolvedException != null;
+                    assert resolvedException.getMessage().contains("GET_RELATIONSHIP_VISUALIZATION_FAILED");
+                });
+    }
+}
+
+
+
+
 package com.yourpackage;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
