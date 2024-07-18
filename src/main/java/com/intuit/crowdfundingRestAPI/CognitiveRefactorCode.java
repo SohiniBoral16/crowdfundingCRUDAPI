@@ -1,335 +1,63 @@
+// File: RelationshipVisualizationControllerTest.java
 
-package com.yourpackage;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
+import com.ns.clientData.p2pservice.controller.RelationshipVisualizationController;
+import com.ns.clientData.p2pservice.service.RelationshipVisualizationService;
+import com.ns.clientData.p2pservice.exception.P2PServiceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultActions;
-
-@WebMvcTest(RelationshipVisualizationController.class)
-public class RelationshipVisualizationControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
-    private RelationshipVisualizationService relationshipVisualizationService;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void testGetRelationshipVisualizationWithException() throws Exception {
-        // Mocking the service to throw an exception
-        when(relationshipVisualizationService.getPartyVisualizationById(any(String.class)))
-                .thenThrow(new RuntimeException("Service exception"));
-
-        // Perform the GET request
-        ResultActions resultActions = mockMvc.perform(get("/visualization/hierarchy/{mainPartyId}", "testMainPartyId")
-                .header("feature", "testFeature"))
-                .andExpect(status().isInternalServerError());
-
-        // Verify the exception message
-        MvcResult mvcResult = resultActions.andReturn();
-        Exception resolvedException = mvcResult.getResolvedException();
-        assert resolvedException != null;
-        assert resolvedException.getMessage().contains("GET_RELATIONSHIP_VISUALIZATION_FAILED");
-    }
-}
-
-
-
-
-package com.yourpackage;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultMatcher;
-
-@WebMvcTest(RelationshipVisualizationController.class)
-public class RelationshipVisualizationControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
-    private RelationshipVisualizationService relationshipVisualizationService;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void testGetRelationshipVisualizationWithException() throws Exception {
-        // Mocking the service to throw an exception
-        when(relationshipVisualizationService.getPartyVisualizationById(any(String.class)))
-                .thenThrow(new RuntimeException("Service exception"));
-
-        // Perform the GET request and verify the response
-        mockMvc.perform(get("/visualization/hierarchy/{mainPartyId}", "testMainPartyId")
-                .header("feature", "testFeature"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(result -> {
-                    Throwable resolvedException = result.getResolvedException();
-                    assert resolvedException != null;
-                    assert resolvedException.getMessage().contains("GET_RELATIONSHIP_VISUALIZATION_FAILED");
-                });
-    }
-}
-
-
-
-
-package com.yourpackage;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
-
-@WebMvcTest(RelationshipVisualizationController.class)
-public class RelationshipVisualizationControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
-    private RelationshipVisualizationService relationshipVisualizationService;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void testGetRelationshipVisualizationWithException() throws Exception {
-        // Simulate an exception by causing an internal server error
-        mockMvc.perform(get("/visualization/hierarchy/{mainPartyId}", "testMainPartyId")
-                .header("feature", "testFeature"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(result -> result.getResponse().getContentAsString().contains("Get Relationship Visualization failed for mainPartyId: testMainPartyId"));
-    }
-}
-
-
-------------------------------
-package com.yourpackage;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
-@RestController
-@RequestMapping("/visualization")
-public class RelationshipVisualizationController {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
-    @Autowired
-    private RelationshipVisualizationService relationshipVisualizationService;
-
-    @GetMapping("/hierarchy/{mainPartyId}")
-    public ResponseEntity<?> getRelationshipVisualization(HttpServletRequest request,
-                                                          @PathVariable("mainPartyId") String mainPartyId,
-                                                          @RequestHeader(value = "feature", required = false) String feature) {
-        try {
-            LOG.info("getRelationshipVisualization called KEY={} SERVICE={} USER={} FEATURE={}", mainPartyId, "GetRelationshipVisualization");
-            List<PartyVisualization> partyVisualization = new ArrayList<>();
-            // Uncomment and implement the service call
-            // partyVisualization = relationshipVisualizationService.getPartyVisualizationById(mainPartyId);
-            return ResponseEntity.ok(partyVisualization);
-        } catch (Exception ex) {
-            String errorMessage = "Get Relationship Visualization failed for mainPartyId: " + mainPartyId;
-            LOG.error(errorMessage, ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body(new ErrorResponse("INTERNAL_SERVER_ERROR", errorMessage));
-        }
-    }
-
-    // ErrorResponse class for structured error response
-    static class ErrorResponse {
-        private String errorCode;
-        private String errorMessage;
-
-        public ErrorResponse(String errorCode, String errorMessage) {
-            this.errorCode = errorCode;
-            this.errorMessage = errorMessage;
-        }
-
-        // Getters and setters
-        public String getErrorCode() {
-            return errorCode;
-        }
-
-        public void setErrorCode(String errorCode) {
-            this.errorCode = errorCode;
-        }
-
-        public String getErrorMessage() {
-            return errorMessage;
-        }
-
-        public void setErrorMessage(String errorMessage) {
-            this.errorMessage = errorMessage;
-        }
-    }
-}
-
-
-------------------------------
-package com.yourpackage;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
-
-@WebMvcTest(RelationshipVisualizationController.class)
+@ExtendWith(MockitoExtension.class)
 public class RelationshipVisualizationControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
+    @Mock
     private RelationshipVisualizationService relationshipVisualizationService;
+
+    @InjectMocks
+    private RelationshipVisualizationController relationshipVisualizationController;
+
+    private HttpServletRequest request;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        request = mock(HttpServletRequest.class);
     }
 
     @Test
-    void testGetRelationshipVisualization() throws Exception {
-        // Perform the GET request and verify the response
-        mockMvc.perform(get("/visualization/hierarchy/{mainPartyId}", "testMainPartyId")
-                .header("feature", "testFeature"))
-                .andExpect(status().isOk());
+    void testGetRelationshipVisualization_Success() throws P2PServiceException {
+        String mainPartyId = "testPartyId";
+        List<PartyRelationshipVisualization> mockResponse = new ArrayList<>();
+        when(request.getParameter("mainPartyId")).thenReturn(mainPartyId);
+        when(relationshipVisualizationService.getPartyRelationshipVisualization(mainPartyId)).thenReturn(mockResponse);
+
+        List<PartyRelationshipVisualization> response = relationshipVisualizationController.getRelationshipVisualization(request);
+
+        assertEquals(mockResponse, response);
+        verify(relationshipVisualizationService, times(1)).getPartyRelationshipVisualization(mainPartyId);
     }
 
     @Test
-    void testGetRelationshipVisualizationWithoutFeature() throws Exception {
-        // Perform the GET request and verify the response
-        mockMvc.perform(get("/visualization/hierarchy/{mainPartyId}", "testMainPartyId"))
-                .andExpect(status().isOk());
-    }
+    void testGetRelationshipVisualization_Failure() throws P2PServiceException {
+        String mainPartyId = "testPartyId";
+        when(request.getParameter("mainPartyId")).thenReturn(mainPartyId);
+        when(relationshipVisualizationService.getPartyRelationshipVisualization(mainPartyId)).thenThrow(new P2PServiceException("Failed"));
 
-    @Test
-    void testGetRelationshipVisualizationWithInvalidId() throws Exception {
-        // Perform the GET request with an invalid ID and verify the response
-        mockMvc.perform(get("/visualization/hierarchy/{mainPartyId}", "invalidMainPartyId"))
-                .andExpect(status().isOk());
-    }
+        P2PServiceException exception = assertThrows(P2PServiceException.class, () -> {
+            relationshipVisualizationController.getRelationshipVisualization(request);
+        });
 
-    @Test
-    void testGetRelationshipVisualizationWithException() throws Exception {
-        // Simulate an exception by causing an internal server error
-        mockMvc.perform(get("/visualization/hierarchy/{mainPartyId}", "testMainPartyId")
-                .header("feature", "testFeature"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(result -> result.getResolvedException().getMessage().contains("Get Relationship Visualization failed"));
-    }
-}
-
-
-
----------------------
-package com.yourpackage;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.test.web.servlet.MockMvc;
-
-@WebMvcTest(controllers = RelationshipVisualizationController.class,
-            excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebstackSecurityConfig.class))
-public class RelationshipVisualizationControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void testGetRelationshipVisualization() throws Exception {
-        // Perform the GET request and verify the response
-        mockMvc.perform(get("/visualization/hierarchy/{mainPartyId}", "testMainPartyId")
-                .header("feature", "testFeature"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void testGetRelationshipVisualizationWithoutFeature() throws Exception {
-        // Perform the GET request and verify the response
-        mockMvc.perform(get("/visualization/hierarchy/{mainPartyId}", "testMainPartyId"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void testGetRelationshipVisualizationWithInvalidId() throws Exception {
-        // Perform the GET request with an invalid ID and verify the response
-        mockMvc.perform(get("/visualization/hierarchy/{mainPartyId}", "invalidMainPartyId"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void testGetRelationshipVisualizationWithException() throws Exception {
-        // Simulate an exception by causing an internal server error
-        mockMvc.perform(get("/visualization/hierarchy/{mainPartyId}", "testMainPartyId")
-                .header("feature", "testFeature"))
-                .andExpect(status().isInternalServerError());
+        assertEquals("Failed", exception.getMessage());
+        verify(relationshipVisualizationService, times(1)).getPartyRelationshipVisualization(mainPartyId);
     }
 }
