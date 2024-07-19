@@ -1,71 +1,69 @@
-// File: RelationshipVisualizationControllerTest.java
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-import com.ns.clientData.p2pservice.controller.RelationshipVisualizationController;
-import com.ns.clientData.p2pservice.exception.P2PServiceException;
-import com.ns.clientData.p2pservice.model.visualization.PartyRelationshipVisualization;
-import com.ns.clientData.p2pservice.service.RelationshipVisualizationService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.List;
+import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
-@ExtendWith(MockitoExtension.class)
+import com.ms.clientdata.p2pservice.controller.RelationshipVisualizationController;
+import com.ms.clientdata.p2pservice.exception.P2PServiceException;
+import com.ms.clientdata.p2pservice.service.RelationshipVisualizationService;
+import com.ms.clientdata.p2pservice.util.RelationshipVisualization;
+
+@WebMvcTest(RelationshipVisualizationController.class)
 public class RelationshipVisualizationControllerTest {
 
-    @InjectMocks
-    private RelationshipVisualizationController relationshipVisualizationController;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @Mock
+    @MockBean
     private RelationshipVisualizationService relationshipVisualizationService;
 
-    private HttpServletRequest request;
+    @Autowired
+    private RelationshipVisualizationController relationshipVisualizationController;
 
     @BeforeEach
-    void setUp() {
-        request = mock(HttpServletRequest.class);
+    public void setUp() {
+        // Setup mock data if needed
     }
 
-    @Test
-    void testGetRelationshipVisualization_Success() throws P2PServiceException {
-        String mainPartyId = "testPartyId";
-        String feature = "testFeature";
+    @ParameterizedTest
+    @MethodSource("provideParameters")
+    public void testGetPrincipleOfHierarchy(String mainPartyId, String feature, List<RelationshipVisualization> mockResponse, HttpStatus expectedStatus) throws Exception {
+        HttpServletRequest request = mock(HttpServletRequest.class);
 
-        when(request.getParameter("mainPartyId")).thenReturn(mainPartyId);
-        when(request.getParameter("x-feature")).thenReturn(feature);
+        if (expectedStatus == HttpStatus.OK) {
+            when(relationshipVisualizationService.getRelationshipVisualizationById(mainPartyId)).thenReturn(mockResponse);
+        } else {
+            when(relationshipVisualizationService.getRelationshipVisualizationById(mainPartyId)).thenThrow(new P2PServiceException("Error occurred"));
+        }
 
-        List<PartyRelationshipVisualization> expectedVisualization = new ArrayList<>();
-        when(relationshipVisualizationService.getPartyRelationshipVisualization(mainPartyId)).thenReturn(expectedVisualization);
-
-        ResponseEntity<List<PartyRelationshipVisualization>> response = relationshipVisualizationController.getRelationshipVisualization(request, mainPartyId, feature);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expectedVisualization, response.getBody());
+        ResponseEntity<List<RelationshipVisualization>> response = relationshipVisualizationController.getPrincipleOfHierarchy(request, mainPartyId, feature);
+        assertEquals(expectedStatus, response.getStatusCode());
+        assertEquals(mockResponse, response.getBody());
     }
 
-    @Test
-    void testGetRelationshipVisualization_Exception() throws P2PServiceException {
-        String mainPartyId = "testPartyId";
-        String feature = "testFeature";
+    private static Stream<Arguments> provideParameters() {
+        List<RelationshipVisualization> successfulResponseBody = List.of(new RelationshipVisualization());
+        HttpStatus successStatus = HttpStatus.OK;
+        
+        List<RelationshipVisualization> failureResponseBody = null;
+        HttpStatus failureStatus = HttpStatus.INTERNAL_SERVER_ERROR;
 
-        when(request.getParameter("mainPartyId")).thenReturn(mainPartyId);
-        when(request.getParameter("x-feature")).thenReturn(feature);
-
-        when(relationshipVisualizationService.getPartyRelationshipVisualization(mainPartyId)).thenThrow(new P2PServiceException("GET_RELATIONSHIP_VISUALIZATION_FAILED"));
-
-        P2PServiceException exception = assertThrows(P2PServiceException.class, () -> {
-            relationshipVisualizationController.getRelationshipVisualization(request, mainPartyId, feature);
-        });
-
-        assertEquals("GET_RELATIONSHIP_VISUALIZATION_FAILED", exception.getMessage());
+        return Stream.of(
+            Arguments.of("validMainPartyId", "validFeature", successfulResponseBody, successStatus),
+            Arguments.of("invalidMainPartyId", "invalidFeature", failureResponseBody, failureStatus)
+        );
     }
 }
