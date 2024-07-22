@@ -1,3 +1,32 @@
+Here is a rewritten version of the email:
+
+---
+
+**To:** Sarathe, Nishant (Ops Tech); Oliveira, Silvia (SHARED SERVICES & BANKING OPS); Kaup, Krithika (SHARED SERVICES & BANKING OPS)  
+**Cc:** Giunga, Maria (SHARED SERVICES & BANKING OPS); Hemmer, Claas-Henning (SHARED SERVICES & BANKING OPS); cors_squad_transformers; Mitra, Sawswati (SHARED SERVICES & BANKING OPS); Shivaprasad, Abhay (SHARED SERVICES & BANKING OPS); Vohra, Saurabh (Ops Tech); Nappi, Danielle (SHARED SERVICES & BANKING OPS); Manasa, Devi (SHARED SERVICES & BANKING OPS); Archana, Desai (SHARED SERVICES & BANKING OPS); Yisa, Phoebe (SHARED SERVICES & BANKING OPS)
+
+**Subject:** RE: [offline program / prod matter] Abu Dhabi KYC – p2p negative affirmation
+
+Hi Nishant,
+
+I have reviewed both the QA and UAT environments and noted the following relationships in negative affiliation across both settings:
+
+[Insert observed relationships and details here]
+
+Please confirm if anything further needs to be done in PipeX to address new P2P and negative affirmations.
+
+All these details are available in A2.
+
+Regards,  
+[Your Name]
+
+---
+
+Is there any specific content you'd like to include in the email or any other modifications needed?
+
+
+
+
 public List<Party> getPartyWithAttributes(String path, String partyId, List<String> attributes, List<String> attributeKeys) {
     long start = System.currentTimeMillis();
     CodaPixPartyRequest codaPixPartyRequest = new CodaPixPartyRequest();
