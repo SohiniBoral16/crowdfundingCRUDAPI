@@ -1,3 +1,27 @@
+public List<Party> getPartyWithAttributes(String path, String partyId, List<String> attributes, List<String> attributeKeys) {
+    long start = System.currentTimeMillis();
+    CodaPixPartyRequest codaPixPartyRequest = new CodaPixPartyRequest();
+    codaPixPartyRequest.setPartyID(partyId);
+    codaPixPartyRequest.setAttributes(attributes != null ? attributes : attributeKeys);
+
+    String url = codaEndpoint + path + "?app-id=" + appId + "&user-id=" + appUser;
+
+    logger.info("coda_getPartyByID for partyId: {} called, URL: {}", partyId, url);
+    CodaPartyRes response = restTemplate.postForObject(url, codaPixPartyRequest, CodaPartyRes.class);
+    logger.info("coda_getPartyByID returned in {} ms", (System.currentTimeMillis() - start));
+
+    return response.getDataList();
+}
+
+// Original methods using the new combined method
+public List<Party> getPartyWithAttributesPOST(String partyId, List<String> attributes) {
+    return getPartyWithAttributes("/parties", partyId, attributes, null);
+}
+
+public List<Party> getPartyWithAttributesBatchPOST(List<String> partyIds, List<String> attributeKeys) {
+    return getPartyWithAttributes("/parties/batch", partyIds, null, attributeKeys);
+}
+----------------------------------------
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
