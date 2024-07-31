@@ -1,122 +1,76 @@
 import java.util.ArrayList;
 import java.util.List;
 
-class NaryTreeNode<T> {
-    T data;
-    List<NaryTreeNode<T>> children;
+class OwnershipNode {
+    String name;
+    double directOwnership;
+    double indirectOwnership;
+    List<OwnershipNode> children;
 
-    public NaryTreeNode(T data) {
-        this.data = data;
+    public OwnershipNode(String name, double directOwnership) {
+        this.name = name;
+        this.directOwnership = directOwnership;
+        this.indirectOwnership = 0;
         this.children = new ArrayList<>();
     }
 
-    public void addChild(NaryTreeNode<T> child) {
+    public void addChild(OwnershipNode child) {
         this.children.add(child);
     }
 }
 
+public class OwnershipTree {
+    private OwnershipNode root;
 
-
-
-public class NaryTree<T> {
-    private NaryTreeNode<T> root;
-
-    public NaryTree(T rootData) {
-        this.root = new NaryTreeNode<>(rootData);
+    public OwnershipTree(OwnershipNode root) {
+        this.root = root;
     }
 
-    public NaryTreeNode<T> getRoot() {
+    // Postorder traversal to calculate indirect ownership
+    public void calculateIndirectOwnership() {
+        calculateIndirectOwnershipHelper(root, 1.0);
+    }
+
+    private void calculateIndirectOwnershipHelper(OwnershipNode node, double parentOwnership) {
+        // Calculate current node's indirect ownership
+        node.indirectOwnership = parentOwnership * node.directOwnership;
+
+        // Traverse all children
+        for (OwnershipNode child : node.children) {
+            calculateIndirectOwnershipHelper(child, node.indirectOwnership);
+        }
+    }
+
+    public void printOwnership(OwnershipNode node) {
+        if (node == null) return;
+        
+        System.out.println(node.name + " - Direct: " + node.directOwnership + ", Indirect: " + node.indirectOwnership);
+        
+        for (OwnershipNode child : node.children) {
+            printOwnership(child);
+        }
+    }
+
+    public OwnershipNode getRoot() {
         return root;
     }
 
-    public void addNode(NaryTreeNode<T> parent, T childData) {
-        NaryTreeNode<T> childNode = new NaryTreeNode<>(childData);
-        parent.addChild(childNode);
-    }
-
-    // Preorder traversal
-    public void preorderTraversal(NaryTreeNode<T> node) {
-        if (node == null) return;
-
-        // Visit the node
-        System.out.print(node.data + " ");
-
-        // Visit all the children
-        for (NaryTreeNode<T> child : node.children) {
-            preorderTraversal(child);
-        }
-    }
-
-    // Postorder traversal
-    public void postorderTraversal(NaryTreeNode<T> node) {
-        if (node == null) return;
-
-        // Visit all the children
-        for (NaryTreeNode<T> child : node.children) {
-            postorderTraversal(child);
-        }
-
-        // Visit the node
-        System.out.print(node.data + " ");
-    }
-
-    // Level order traversal
-    public void levelOrderTraversal() {
-        if (root == null) return;
-
-        Queue<NaryTreeNode<T>> queue = new LinkedList<>();
-        queue.add(root);
-
-        while (!queue.isEmpty()) {
-            NaryTreeNode<T> node = queue.poll();
-            System.out.print(node.data + " ");
-
-            for (NaryTreeNode<T> child : node.children) {
-                queue.add(child);
-            }
-        }
-    }
-
-    // Find node by value
-    public NaryTreeNode<T> find(NaryTreeNode<T> node, T value) {
-        if (node == null) return null;
-
-        if (node.data.equals(value)) return node;
-
-        for (NaryTreeNode<T> child : node.children) {
-            NaryTreeNode<T> result = find(child, value);
-            if (result != null) return result;
-        }
-
-        return null;
-    }
-
     public static void main(String[] args) {
-        NaryTree<Integer> tree = new NaryTree<>(1);
-        NaryTreeNode<Integer> root = tree.getRoot();
-        
-        tree.addNode(root, 2);
-        tree.addNode(root, 3);
-        tree.addNode(root, 4);
+        OwnershipNode A = new OwnershipNode("A", 1.0);
+        OwnershipNode B = new OwnershipNode("B", 0.5);
+        OwnershipNode C = new OwnershipNode("C", 0.5);
+        OwnershipNode D = new OwnershipNode("D", 0.8);
+        OwnershipNode E = new OwnershipNode("E", 0.2);
+        OwnershipNode F = new OwnershipNode("F", 1.0);
 
-        NaryTreeNode<Integer> node2 = tree.find(root, 2);
-        NaryTreeNode<Integer> node3 = tree.find(root, 3);
-        NaryTreeNode<Integer> node4 = tree.find(root, 4);
+        A.addChild(B);
+        A.addChild(C);
+        B.addChild(D);
+        B.addChild(E);
+        C.addChild(F);
 
-        tree.addNode(node2, 5);
-        tree.addNode(node2, 6);
-        tree.addNode(node3, 7);
-        tree.addNode(node3, 8);
-        tree.addNode(node4, 9);
-        tree.addNode(node4, 10);
-
-        System.out.println("Preorder Traversal:");
-        tree.preorderTraversal(root);
-
-        System.out.println("\nPostorder Traversal:");
-        tree.postorderTraversal(root);
-
-        System.out.println("\nLevel Order Traversal:");
-        tree.levelOrderTraversal();
+        OwnershipTree tree = new OwnershipTree(A);
+        tree.calculateIndirectOwnership();
+        tree.printOwnership(tree.getRoot());
     }
 }
