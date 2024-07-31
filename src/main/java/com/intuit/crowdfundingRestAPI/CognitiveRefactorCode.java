@@ -1,47 +1,122 @@
-Certainly! Here's a more professional version of the email content:
+import java.util.ArrayList;
+import java.util.List;
 
----
+class NaryTreeNode<T> {
+    T data;
+    List<NaryTreeNode<T>> children;
 
-**Subject:** Discussion on Relationship Hierarchy Modeling in PIPEX for Visualization
+    public NaryTreeNode(T data) {
+        this.data = data;
+        this.children = new ArrayList<>();
+    }
 
-**To:** Chan Afhan (Ops Tech), Raman Venkatesh (Ops Tech), Pande Anirudha (Ops Tech), M. Sundhar S (Ops Tech)
+    public void addChild(NaryTreeNode<T> child) {
+        this.children.add(child);
+    }
+}
 
-**CC:** Espinheiro, Marlina (SHARED SERVICES & BANKING OPS), Panneer Selvam, Vijay (Ops Tech), Bodicherla, Srikanth (Ops Tech)
 
-**Date:** Tuesday, July 30, 2024
 
-**Time:** 8:00 PM - 8:30 PM
 
-**Location:** Zoom ID: sohinjb
+public class NaryTree<T> {
+    private NaryTreeNode<T> root;
 
-**Agenda:**
+    public NaryTree(T rootData) {
+        this.root = new NaryTreeNode<>(rootData);
+    }
 
-1. **Relationship Hierarchy Modeling in PIPEX**
+    public NaryTreeNode<T> getRoot() {
+        return root;
+    }
 
-   We need to model the following two tables to show the relationship hierarchy in PIPEX:
+    public void addNode(NaryTreeNode<T> parent, T childData) {
+        NaryTreeNode<T> childNode = new NaryTreeNode<>(childData);
+        parent.addChild(childNode);
+    }
 
-   - **Table 1:** `binaryRelationshipHierarchy` (New Table)
-     - Columns:
-       - `HierarchyRelationId`
-       - `RelatedParty`
-       - `ParentParty`
-       - `OwnershipPercentWithActualParent`
+    // Preorder traversal
+    public void preorderTraversal(NaryTreeNode<T> node) {
+        if (node == null) return;
 
-   - **Table 2:** `binaryRelationshipHierarchyLinkage` (New Table)
-     - Columns:
-       - `binaryRelationshipID`
-       - `hierarchyRelationshipID`
+        // Visit the node
+        System.out.print(node.data + " ");
 
-   The primary focus of the discussion will be on the approach and requirements for the above model.
+        // Visit all the children
+        for (NaryTreeNode<T> child : node.children) {
+            preorderTraversal(child);
+        }
+    }
 
-We look forward to discussing the above approach in detail.
+    // Postorder traversal
+    public void postorderTraversal(NaryTreeNode<T> node) {
+        if (node == null) return;
 
-Best Regards,
+        // Visit all the children
+        for (NaryTreeNode<T> child : node.children) {
+            postorderTraversal(child);
+        }
 
-[Your Name]  
-[Your Position]  
-[Your Contact Information]
+        // Visit the node
+        System.out.print(node.data + " ");
+    }
 
----
+    // Level order traversal
+    public void levelOrderTraversal() {
+        if (root == null) return;
 
-Feel free to replace the placeholders with your actual name, position, and contact information.
+        Queue<NaryTreeNode<T>> queue = new LinkedList<>();
+        queue.add(root);
+
+        while (!queue.isEmpty()) {
+            NaryTreeNode<T> node = queue.poll();
+            System.out.print(node.data + " ");
+
+            for (NaryTreeNode<T> child : node.children) {
+                queue.add(child);
+            }
+        }
+    }
+
+    // Find node by value
+    public NaryTreeNode<T> find(NaryTreeNode<T> node, T value) {
+        if (node == null) return null;
+
+        if (node.data.equals(value)) return node;
+
+        for (NaryTreeNode<T> child : node.children) {
+            NaryTreeNode<T> result = find(child, value);
+            if (result != null) return result;
+        }
+
+        return null;
+    }
+
+    public static void main(String[] args) {
+        NaryTree<Integer> tree = new NaryTree<>(1);
+        NaryTreeNode<Integer> root = tree.getRoot();
+        
+        tree.addNode(root, 2);
+        tree.addNode(root, 3);
+        tree.addNode(root, 4);
+
+        NaryTreeNode<Integer> node2 = tree.find(root, 2);
+        NaryTreeNode<Integer> node3 = tree.find(root, 3);
+        NaryTreeNode<Integer> node4 = tree.find(root, 4);
+
+        tree.addNode(node2, 5);
+        tree.addNode(node2, 6);
+        tree.addNode(node3, 7);
+        tree.addNode(node3, 8);
+        tree.addNode(node4, 9);
+        tree.addNode(node4, 10);
+
+        System.out.println("Preorder Traversal:");
+        tree.preorderTraversal(root);
+
+        System.out.println("\nPostorder Traversal:");
+        tree.postorderTraversal(root);
+
+        System.out.println("\nLevel Order Traversal:");
+        tree.levelOrderTraversal();
+    }
+}
