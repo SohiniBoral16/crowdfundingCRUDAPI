@@ -3,6 +3,91 @@ import java.util.List;
 
 class OwnershipNode {
     String name;
+    boolean isPep;
+    List<OwnershipNode> children;
+
+    public OwnershipNode(String name, boolean isPep) {
+        this.name = name;
+        this.isPep = isPep;
+        this.children = new ArrayList<>();
+    }
+
+    public void addChild(OwnershipNode child) {
+        this.children.add(child);
+    }
+}
+
+
+public class OwnershipTree {
+    private OwnershipNode root;
+
+    public OwnershipTree(OwnershipNode root) {
+        this.root = root;
+    }
+
+    // Postorder traversal to mark "pep" status
+    public void markPepStatus() {
+        markPepStatusHelper(root);
+    }
+
+    private boolean markPepStatusHelper(OwnershipNode node) {
+        if (node == null) return false;
+
+        boolean isAnyChildPep = false;
+
+        // Traverse all children
+        for (OwnershipNode child : node.children) {
+            isAnyChildPep = markPepStatusHelper(child) || isAnyChildPep;
+        }
+
+        // If any child is "pep", mark this node as "pep"
+        if (isAnyChildPep) {
+            node.isPep = true;
+        }
+
+        // Return whether this node or any of its children is "pep"
+        return node.isPep;
+    }
+
+    public void printPepStatus(OwnershipNode node) {
+        if (node == null) return;
+
+        System.out.println(node.name + " - Pep: " + node.isPep);
+
+        for (OwnershipNode child : node.children) {
+            printPepStatus(child);
+        }
+    }
+
+    public OwnershipNode getRoot() {
+        return root;
+    }
+
+    public static void main(String[] args) {
+        OwnershipNode A = new OwnershipNode("A", false);
+        OwnershipNode B = new OwnershipNode("B", true);
+        OwnershipNode C = new OwnershipNode("C", false);
+        OwnershipNode D = new OwnershipNode("D", false);
+        OwnershipNode E = new OwnershipNode("E", false);
+        OwnershipNode F = new OwnershipNode("F", true);
+
+        A.addChild(B);
+        A.addChild(C);
+        B.addChild(D);
+        B.addChild(E);
+        C.addChild(F);
+
+        OwnershipTree tree = new OwnershipTree(A);
+        tree.markPepStatus();
+        tree.printPepStatus(tree.getRoot());
+    }
+}
+
+import java.util.ArrayList;
+import java.util.List;
+
+class OwnershipNode {
+    String name;
     double directOwnership;
     double indirectOwnership;
     List<OwnershipNode> children;
