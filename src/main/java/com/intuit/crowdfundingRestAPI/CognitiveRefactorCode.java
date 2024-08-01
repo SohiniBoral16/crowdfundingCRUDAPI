@@ -1,3 +1,69 @@
+I see the issue. It looks like we need to adjust the `getDeepNestedValue` method to handle nested values correctly and return the appropriate type. Let's rewrite the method to properly handle nested null checks.
+
+We'll change the approach to use a list of suppliers, checking each level in sequence:
+
+### Step 1: Define the Utility Method for Deep Nested Checks
+
+```java
+import java.util.Optional;
+import java.util.function.Supplier;
+
+public class RelationshipAttributeService {
+
+    public RelationshipAttributeDetails getRelationshipAttribute(PartyToPartyRelationship partyRelationship) {
+        RelationshipAttributeDetails relationshipAttribute = new RelationshipAttributeDetails();
+
+        // Setting attributes using the common getValue method
+        relationshipAttribute.setBusinessTitle(getValue(() -> partyRelationship.getBusinessTitle()));
+        relationshipAttribute.setJapanUltimateBeneficialOwnerApplicability(getValue(() -> partyRelationship.getJapanUltimateBeneficialOwnerApplicability()));
+        relationshipAttribute.setPercentOfAnnualOperatingRevenueFromOwner(getValue(() -> partyRelationship.getPercentOfAnnualOperatingRevenueFromOwner()));
+        relationshipAttribute.setPercentOfAnnualOperatingRevenueFromOwner(getDeepNestedValue(
+            () -> partyRelationship.getPercentOfAnnualOperatingRevenueFromOwner(),
+            () -> partyRelationship.getPercentOfAnnualOperatingRevenueFromOwner().getName()
+        ));
+        relationshipAttribute.setPercentOfBeneficialOwnership(getValue(() -> partyRelationship.getPercentOfBeneficialOwnership()));
+        relationshipAttribute.setPercentOfDirectBeneficialOwnership(getDeepNestedValue(
+            () -> partyRelationship.getPercentOfDirectBeneficialOwnership(),
+            () -> partyRelationship.getPercentOfDirectBeneficialOwnership().getName()
+        ));
+        // Continue this pattern for the rest of the fields...
+
+        return relationshipAttribute;
+    }
+
+    private <T> T getValue(Supplier<T> supplier) {
+        return Optional.ofNullable(supplier.get()).orElse(null);
+    }
+
+    @SafeVarargs
+    private final <T> T getDeepNestedValue(Supplier<?>... suppliers) {
+        Object value = null;
+        for (Supplier<?> supplier : suppliers) {
+            value = supplier.get();
+            if (value == null) {
+                return null;
+            }
+        }
+        return (T) value;
+    }
+
+    // Additional methods if necessary...
+}
+```
+
+### Explanation
+
+1. **getValue Method**: A simple utility to handle null checks for a single supplier.
+
+2. **getDeepNestedValue Method**: This method takes a varargs of suppliers. It iterates over each supplier and returns null if any supplier in the sequence provides a null value. If all suppliers are non-null, it returns the value from the last supplier cast to the appropriate type.
+
+### Usage
+
+In the `getRelationshipAttribute` method, you use `getDeepNestedValue` for fields that require multiple levels of null checks. The suppliers are passed in sequence, and the method ensures that if any level is null, it returns null.
+
+This implementation keeps the code clean and flexible for deep nested null checks, ensuring that any intermediate null results in a null return.
+
+
 import java.util.Optional;
 import java.util.function.Supplier;
 
