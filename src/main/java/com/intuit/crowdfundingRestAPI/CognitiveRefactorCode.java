@@ -1,3 +1,38 @@
+import java.util.Optional;
+import java.util.function.Supplier;
+
+public class PartyRelationshipVisualizationService {
+
+    public PartyRelationshipVisualization getPartyDetails(Party party) {
+        PartyRelationshipVisualization partyDetails = new PartyRelationshipVisualization();
+
+        // Set other attributes...
+
+        // Using Supplier for getCountryOfDomicile logic
+        partyDetails.setCountryOfDomicile(getValue(() -> {
+            if (party.getCountryOfDomicile() != null) {
+                if (party.getCountryOfDomicile().getName() != null) {
+                    return party.getCountryOfDomicile().getName();
+                } else {
+                    return party.getCountryOfDomicile().getId().toString();
+                }
+            }
+            return null;
+        }));
+
+        // Set other attributes...
+
+        return partyDetails;
+    }
+
+    private <T> T getValue(Supplier<T> supplier) {
+        return Optional.ofNullable(supplier.get()).orElse(null);
+    }
+
+    // Other methods...
+}
+------------
+
 import java.util.List;
 
 class Party {
