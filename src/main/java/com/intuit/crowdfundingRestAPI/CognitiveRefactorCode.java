@@ -1,231 +1,140 @@
-public class OwnershipTree {
-    private OwnershipNode root;
-
-    public OwnershipTree(OwnershipNode root) {
-        this.root = root;
-    }
-
-    // Postorder traversal to calculate indirect ownership and mark "pep" status
-    public void calculateIndirectOwnershipAndPepStatus() {
-        calculateIndirectOwnershipAndPepStatusHelper(root, 1.0);  // Start with 100% ownership for root
-    }
-
-    private boolean calculateIndirectOwnershipAndPepStatusHelper(OwnershipNode node, double parentOwnership) {
-        if (node == null) return false;
-
-        // Calculate current node's indirect ownership
-        node.indirectOwnership = parentOwnership * node.directOwnership;
-
-        boolean isAnyChildPep = false;
-
-        // Traverse all children
-        for (OwnershipNode child : node.children) {
-            boolean isChildPep = calculateIndirectOwnershipAndPepStatusHelper(child, node.indirectOwnership);
-            isAnyChildPep = isAnyChildPep || isChildPep;
-        }
-
-        // If any child is "pep", mark this node as "pep"
-        if (isAnyChildPep) {
-            node.isPep = true;
-        }
-
-        // Return whether this node or any of its children is "pep"
-        return node.isPep;
-    }
-
-    public void printOwnershipAndPepStatus(OwnershipNode node) {
-        if (node == null) return;
-
-        System.out.println(node.name + " - Direct: " + node.directOwnership + ", Indirect: " + node.indirectOwnership + ", Pep: " + node.isPep);
-
-        for (OwnershipNode child : node.children) {
-            printOwnershipAndPepStatus(child);
-        }
-    }
-
-    public OwnershipNode getRoot() {
-        return root;
-    }
-
-    public static void main(String[] args) {
-        OwnershipNode A = new OwnershipNode("A", 1.0, false);
-        OwnershipNode B = new OwnershipNode("B", 0.5, true);
-        OwnershipNode C = new OwnershipNode("C", 0.5, false);
-        OwnershipNode D = new OwnershipNode("D", 0.8, false);
-        OwnershipNode E = new OwnershipNode("E", 0.2, false);
-        OwnershipNode F = new OwnershipNode("F", 1.0, true);
-
-        A.addChild(B);
-        A.addChild(C);
-        B.addChild(D);
-        B.addChild(E);
-        C.addChild(F);
-
-        OwnershipTree tree = new OwnershipTree(A);
-        tree.calculateIndirectOwnershipAndPepStatus();
-        tree.printOwnershipAndPepStatus(tree.getRoot());
-    }
-}
-
-------------------------------------
-import java.util.ArrayList;
 import java.util.List;
 
-class OwnershipNode {
-    String name;
-    boolean isPep;
-    List<OwnershipNode> children;
+class Party {
+    String partyId;
+    List<Relationship> relatedParties;
 
-    public OwnershipNode(String name, boolean isPep) {
-        this.name = name;
-        this.isPep = isPep;
-        this.children = new ArrayList<>();
-    }
-
-    public void addChild(OwnershipNode child) {
-        this.children.add(child);
+    public Party(String partyId, List<Relationship> relatedParties) {
+        this.partyId = partyId;
+        this.relatedParties = relatedParties;
     }
 }
 
-
-public class OwnershipTree {
-    private OwnershipNode root;
-
-    public OwnershipTree(OwnershipNode root) {
-        this.root = root;
-    }
-
-    // Postorder traversal to mark "pep" status
-    public void markPepStatus() {
-        markPepStatusHelper(root);
-    }
-
-    private boolean markPepStatusHelper(OwnershipNode node) {
-        if (node == null) return false;
-
-        boolean isAnyChildPep = false;
-
-        // Traverse all children
-        for (OwnershipNode child : node.children) {
-            isAnyChildPep = markPepStatusHelper(child) || isAnyChildPep;
-        }
-
-        // If any child is "pep", mark this node as "pep"
-        if (isAnyChildPep) {
-            node.isPep = true;
-        }
-
-        // Return whether this node or any of its children is "pep"
-        return node.isPep;
-    }
-
-    public void printPepStatus(OwnershipNode node) {
-        if (node == null) return;
-
-        System.out.println(node.name + " - Pep: " + node.isPep);
-
-        for (OwnershipNode child : node.children) {
-            printPepStatus(child);
-        }
-    }
-
-    public OwnershipNode getRoot() {
-        return root;
-    }
-
-    public static void main(String[] args) {
-        OwnershipNode A = new OwnershipNode("A", false);
-        OwnershipNode B = new OwnershipNode("B", true);
-        OwnershipNode C = new OwnershipNode("C", false);
-        OwnershipNode D = new OwnershipNode("D", false);
-        OwnershipNode E = new OwnershipNode("E", false);
-        OwnershipNode F = new OwnershipNode("F", true);
-
-        A.addChild(B);
-        A.addChild(C);
-        B.addChild(D);
-        B.addChild(E);
-        C.addChild(F);
-
-        OwnershipTree tree = new OwnershipTree(A);
-        tree.markPepStatus();
-        tree.printPepStatus(tree.getRoot());
-    }
-}
-
-import java.util.ArrayList;
-import java.util.List;
-
-class OwnershipNode {
-    String name;
+class Relationship {
+    String relationshipType;
     double directOwnership;
     double indirectOwnership;
-    List<OwnershipNode> children;
+    double ownershipRange;
+    boolean significantInfluence;
+    Party childParty;
 
-    public OwnershipNode(String name, double directOwnership) {
-        this.name = name;
+    public Relationship(String relationshipType, double directOwnership, double indirectOwnership, double ownershipRange, boolean significantInfluence, Party childParty) {
+        this.relationshipType = relationshipType;
         this.directOwnership = directOwnership;
-        this.indirectOwnership = 0;
-        this.children = new ArrayList<>();
-    }
-
-    public void addChild(OwnershipNode child) {
-        this.children.add(child);
+        this.indirectOwnership = indirectOwnership;
+        this.ownershipRange = ownershipRange;
+        this.significantInfluence = significantInfluence;
+        this.childParty = childParty;
     }
 }
 
-public class OwnershipTree {
-    private OwnershipNode root;
 
-    public OwnershipTree(OwnershipNode root) {
-        this.root = root;
+import java.util.HashMap;
+import java.util.Map;
+
+class Graph {
+    Map<String, Party> partyLookup;
+
+    public Graph() {
+        this.partyLookup = new HashMap<>();
     }
 
-    // Postorder traversal to calculate indirect ownership
-    public void calculateIndirectOwnership() {
-        calculateIndirectOwnershipHelper(root, 1.0);
+    public void addParty(Party party) {
+        partyLookup.put(party.partyId, party);
     }
 
-    private void calculateIndirectOwnershipHelper(OwnershipNode node, double parentOwnership) {
-        // Calculate current node's indirect ownership
-        node.indirectOwnership = parentOwnership * node.directOwnership;
+    public void addRelationship(String parentPartyId, String childPartyId, Relationship relationship) {
+        Party parentParty = partyLookup.get(parentPartyId);
+        Party childParty = partyLookup.get(childPartyId);
+        relationship.childParty = childParty;
+        parentParty.relatedParties.add(relationship);
+    }
+}
 
-        // Traverse all children
-        for (OwnershipNode child : node.children) {
-            calculateIndirectOwnershipHelper(child, node.indirectOwnership);
+import java.util.*;
+
+class RelationshipTree {
+    String partyId;
+    Map<String, List<RelationshipTree>> childrenByType;
+
+    public RelationshipTree(String partyId) {
+        this.partyId = partyId;
+        this.childrenByType = new HashMap<>();
+    }
+
+    public void addChild(String relationshipType, RelationshipTree childTree) {
+        this.childrenByType.computeIfAbsent(relationshipType, k -> new ArrayList<>()).add(childTree);
+    }
+
+    public void printTree(String indent) {
+        System.out.println(indent + partyId);
+        for (Map.Entry<String, List<RelationshipTree>> entry : childrenByType.entrySet()) {
+            String type = entry.getKey();
+            List<RelationshipTree> children = entry.getValue();
+            System.out.println(indent + "  Type: " + type);
+            for (RelationshipTree child : children) {
+                child.printTree(indent + "    ");
+            }
         }
     }
 
-    public void printOwnership(OwnershipNode node) {
-        if (node == null) return;
-        
-        System.out.println(node.name + " - Direct: " + node.directOwnership + ", Indirect: " + node.indirectOwnership);
-        
-        for (OwnershipNode child : node.children) {
-            printOwnership(child);
+    public void calculateIndirectOwnershipAndPepStatus(Graph graph, double parentOwnership, Set<String> pepParties) {
+        Party party = graph.partyLookup.get(partyId);
+        boolean isPep = pepParties.contains(partyId);
+        for (Relationship relationship : party.relatedParties) {
+            RelationshipTree childTree = new RelationshipTree(relationship.childParty.partyId);
+            addChild(relationship.relationshipType, childTree);
+            double childIndirectOwnership = parentOwnership * relationship.directOwnership;
+            childTree.calculateIndirectOwnershipAndPepStatus(graph, childIndirectOwnership, pepParties);
+            isPep = isPep || pepParties.contains(relationship.childParty.partyId);
+        }
+        if (isPep) {
+            pepParties.add(partyId);
         }
     }
+}
 
-    public OwnershipNode getRoot() {
-        return root;
-    }
-
+public class Main {
     public static void main(String[] args) {
-        OwnershipNode A = new OwnershipNode("A", 1.0);
-        OwnershipNode B = new OwnershipNode("B", 0.5);
-        OwnershipNode C = new OwnershipNode("C", 0.5);
-        OwnershipNode D = new OwnershipNode("D", 0.8);
-        OwnershipNode E = new OwnershipNode("E", 0.2);
-        OwnershipNode F = new OwnershipNode("F", 1.0);
+        // Initialize parties and relationships (this would normally come from your database)
+        Party partyA = new Party("A", new ArrayList<>());
+        Party partyB = new Party("B", new ArrayList<>());
+        Party partyC = new Party("C", new ArrayList<>());
+        Party partyD = new Party("D", new ArrayList<>());
+        Party partyE = new Party("E", new ArrayList<>());
+        Party partyF = new Party("F", new ArrayList<>());
 
-        A.addChild(B);
-        A.addChild(C);
-        B.addChild(D);
-        B.addChild(E);
-        C.addChild(F);
+        Relationship r1 = new Relationship("r1", 0.5, 0, 0, false, partyB);
+        Relationship r2 = new Relationship("r2", 0.3, 0, 0, false, partyC);
+        Relationship r3 = new Relationship("r3", 0.4, 0, 0, false, partyD);
+        Relationship r4 = new Relationship("r4", 0.2, 0, 0, false, partyE);
+        Relationship r5 = new Relationship("r5", 0.1, 0, 0, false, partyF);
 
-        OwnershipTree tree = new OwnershipTree(A);
-        tree.calculateIndirectOwnership();
-        tree.printOwnership(tree.getRoot());
+        // Create graph and add parties and relationships
+        Graph graph = new Graph();
+        graph.addParty(partyA);
+        graph.addParty(partyB);
+        graph.addParty(partyC);
+        graph.addParty(partyD);
+        graph.addParty(partyE);
+        graph.addParty(partyF);
+
+        graph.addRelationship("A", "B", r1);
+        graph.addRelationship("A", "C", r2);
+        graph.addRelationship("B", "D", r3);
+        graph.addRelationship("C", "E", r4);
+        graph.addRelationship("E", "F", r5);
+
+        // Initialize RelationshipTree
+        RelationshipTree root = new RelationshipTree("A");
+
+        // Set of parties that are "pep"
+        Set<String> pepParties = new HashSet<>(Arrays.asList("F"));
+
+        // Calculate indirect ownership and "pep" status
+        root.calculateIndirectOwnershipAndPepStatus(graph, 1.0, pepParties);
+
+        // Print the tree structure
+        root.printTree("");
     }
 }
