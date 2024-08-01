@@ -1,3 +1,48 @@
+import java.util.Optional;
+import java.util.function.Supplier;
+
+public class RelationshipAttributeService {
+
+    public RelationshipAttributeDetails getRelationshipAttribute(PartyToPartyRelationship partyRelationship) {
+        RelationshipAttributeDetails relationshipAttribute = new RelationshipAttributeDetails();
+
+        // Setting attributes using the common getValue method
+        relationshipAttribute.setBusinessTitle(getValue(() -> partyRelationship.getBusinessTitle()));
+        relationshipAttribute.setJapanUltimateBeneficialOwnerApplicability(getValue(() -> partyRelationship.getJapanUltimateBeneficialOwnerApplicability()));
+        relationshipAttribute.setPercentOfAnnualOperatingRevenueFromOwner(getValue(() -> partyRelationship.getPercentOfAnnualOperatingRevenueFromOwner()));
+        relationshipAttribute.setPercentOfAnnualOperatingRevenueFromOwner(getDeepNestedValue(
+            () -> partyRelationship.getPercentOfAnnualOperatingRevenueFromOwner(),
+            () -> partyRelationship.getPercentOfAnnualOperatingRevenueFromOwner().getName()
+        ));
+        relationshipAttribute.setPercentOfBeneficialOwnership(getValue(() -> partyRelationship.getPercentOfBeneficialOwnership()));
+        relationshipAttribute.setPercentOfDirectBeneficialOwnership(getDeepNestedValue(
+            () -> partyRelationship.getPercentOfDirectBeneficialOwnership(),
+            () -> partyRelationship.getPercentOfDirectBeneficialOwnership().getName()
+        ));
+        // Continue this pattern for the rest of the fields...
+
+        return relationshipAttribute;
+    }
+
+    private <T> T getValue(Supplier<T> supplier) {
+        return Optional.ofNullable(supplier.get()).orElse(null);
+    }
+
+    @SafeVarargs
+    private <T> T getDeepNestedValue(Supplier<T>... suppliers) {
+        for (Supplier<T> supplier : suppliers) {
+            T value = supplier.get();
+            if (value == null) {
+                return null;
+            }
+        }
+        return suppliers[suppliers.length - 1].get();
+    }
+
+    // Additional methods if necessary...
+}
+
+
 
 import java.util.Optional;
 import java.util.function.Supplier;
