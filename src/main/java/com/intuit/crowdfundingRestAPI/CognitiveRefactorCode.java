@@ -1,3 +1,20 @@
+public void printTree(Graph graph, String indent) {
+    Party party = graph.getParty(partyId);
+    double totalIndirectOwnership = party.relatedParties.stream().mapToDouble(r -> r.indirectOwnership).sum();
+    boolean isPep = party.relatedParties.stream().anyMatch(r -> r.significantInfluence) || party.relatedParties.stream().anyMatch(r -> graph.getParty(r.destinationParty.partyId).relatedParties.stream().anyMatch(childRel -> childRel.significantInfluence));
+    
+    System.out.println(indent + partyId + " - Indirect Ownership: " + totalIndirectOwnership + ", Pep: " + isPep);
+
+    for (Map.Entry<String, List<RelationshipTree>> entry : childrenByType.entrySet()) {
+        String type = entry.getKey();
+        List<RelationshipTree> children = entry.getValue();
+        System.out.println(indent + "  Type: " + type);
+        for (RelationshipTree child : children) {
+            child.printTree(graph, indent + "    ");
+        }
+    }
+}
+
 import java.util.*;
 
 class RelationshipTree {
