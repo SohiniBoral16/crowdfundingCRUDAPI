@@ -1,3 +1,50 @@
+import java.util.*;
+
+class RelationshipTree {
+    String partyId;
+    Map<String, List<RelationshipTree>> childrenByType;
+
+    public RelationshipTree(String partyId) {
+        this.partyId = partyId;
+        this.childrenByType = new HashMap<>();
+    }
+
+    public void addChild(String relationshipType, RelationshipTree childTree) {
+        this.childrenByType.computeIfAbsent(relationshipType, k -> new ArrayList<>()).add(childTree);
+    }
+
+    public void printTree(Graph graph, String indent) {
+        Party party = graph.getParty(partyId);
+        System.out.println(indent + partyId + " - Indirect Ownership: " + party.relatedParties.stream().mapToDouble(r -> r.indirectOwnership).sum() + ", Pep: " + party.relatedParties.stream().anyMatch(r -> r.significantInfluence));
+
+        for (Map.Entry<String, List<RelationshipTree>> entry : childrenByType.entrySet()) {
+            String type = entry.getKey();
+            List<RelationshipTree> children = entry.getValue();
+            System.out.println(indent + "  Type: " + type);
+            for (RelationshipTree child : children) {
+                child.printTree(graph, indent + "    ");
+            }
+        }
+    }
+
+    public void calculateIndirectOwnershipAndPepStatus(Graph graph, double parentOwnership, Set<String> pepParties) {
+        Party party = graph.getParty(partyId);
+        boolean isPep = pepParties.contains(partyId);
+        for (Relationship relationship : party.relatedParties) {
+            RelationshipTree childTree = new RelationshipTree(relationship.destinationParty.partyId);
+            addChild(relationship.relationshipType, childTree);
+            double childIndirectOwnership = parentOwnership * relationship.directOwnership;
+            relationship.indirectOwnership = childIndirectOwnership;
+            childTree.calculateIndirectOwnershipAndPepStatus(graph, childIndirectOwnership, pepParties);
+            isPep = isPep || pepParties.contains(relationship.destinationParty.partyId);
+        }
+        if (isPep) {
+            pepParties.add(partyId);
+        }
+    }
+}
+
+---------------------------------------
 import java.util.ArrayList;
 import java.util.List;
 
