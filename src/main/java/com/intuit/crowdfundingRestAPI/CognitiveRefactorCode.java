@@ -1,5 +1,58 @@
+import java.util.Arrays;
 
+public class Main {
+    public static void main(String[] args) {
+        // Initialize parties
+        Party partyA = new Party("A");
+        Party partyB = new Party("B");
+        Party partyC = new Party("C");
+        Party partyD = new Party("D");
+        Party partyE = new Party("E");
+        Party partyF = new Party("F");
 
+        // Initialize relationships based on the provided diagram
+        Relationship r1 = new Relationship("r1", 0.5f, false, partyA, partyB);
+        Relationship r2 = new Relationship("r2", 0.3f, false, partyA, partyC);
+        Relationship r3 = new Relationship("r3", 0.4f, false, partyB, partyD);
+        Relationship r4 = new Relationship("r4", 0.2f, false, partyA, partyE);
+        Relationship r5 = new Relationship("r5", 0.1f, false, partyC, partyF);
+        Relationship r6 = new Relationship("r6", 0.2f, false, partyB, partyD);
+        Relationship r7 = new Relationship("r7", 0.1f, false, partyE, partyF);
+
+        // Create graph and add parties
+        Graph graph = new Graph();
+        graph.addParty(partyA);
+        graph.addParty(partyB);
+        graph.addParty(partyC);
+        graph.addParty(partyD);
+        graph.addParty(partyE);
+        graph.addParty(partyF);
+
+        // Add relationships to the graph
+        graph.addRelationship("A", "B", r1);
+        graph.addRelationship("A", "C", r2);
+        graph.addRelationship("A", "E", r4);
+        graph.addRelationship("B", "D", r3);
+        graph.addRelationship("C", "F", r5);
+        graph.addRelationship("B", "D", r6);
+        graph.addRelationship("E", "F", r7);
+
+        // Calculate levels and the longest path parent
+        graph.calculateLevelsAndLongestPathParent("A");
+
+        // Get the level and longest path parent for party E
+        int levelOfE = graph.getPartyLevel("E");
+        String longestPathParentOfE = graph.getLongestPathParent("E");
+
+        System.out.println("Level of E: " + levelOfE);
+        System.out.println("Longest path parent of E: " + longestPathParentOfE);
+
+        // Calculate and print the longest path
+        int longestPath = graph.calculateLongestPath("A");
+        System.out.println("Longest path length: " + longestPath);
+    }
+}
+---------------------------
 import java.util.*;
 
 public class Graph {
