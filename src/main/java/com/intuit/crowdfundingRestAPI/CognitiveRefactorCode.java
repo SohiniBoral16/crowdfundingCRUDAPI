@@ -1,3 +1,59 @@
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class Graph {
+    private Map<String, Party> partyLookup;
+
+    public Graph() {
+        this.partyLookup = new HashMap<>();
+    }
+
+    public void addParty(Party party) {
+        partyLookup.put(party.getPartyId(), party);
+    }
+
+    public void addRelationship(String sourcePartyId, String destinationPartyId, Relationship relationship) {
+        Party sourceParty = partyLookup.get(sourcePartyId);
+        Party destinationParty = partyLookup.get(destinationPartyId);
+        relationship.setSourceParty(sourceParty);
+        relationship.setDestinationParty(destinationParty);
+        sourceParty.addRelationship(relationship);
+    }
+
+    public void addRelationships(String sourcePartyId, List<Relationship> relationships) {
+        Party sourceParty = partyLookup.get(sourcePartyId);
+        for (Relationship relationship : relationships) {
+            Party destinationParty = partyLookup.get(relationship.getDestinationParty().getPartyId());
+            relationship.setSourceParty(sourceParty);
+            relationship.setDestinationParty(destinationParty);
+            sourceParty.addRelationship(relationship);
+        }
+    }
+
+    public Party getParty(String partyId) {
+        return partyLookup.get(partyId);
+    }
+
+    // Calculate the longest path
+    public int calculateLongestPath(String rootPartyId) {
+        Party root = partyLookup.get(rootPartyId);
+        return dfs(root);
+    }
+
+    private int dfs(Party party) {
+        if (party == null) return 0;
+        int maxDepth = 0;
+        for (Relationship relationship : party.getRelatedPartyHierarchy()) {
+            int depth = dfs(relationship.getDestinationParty());
+            maxDepth = Math.max(maxDepth, depth);
+        }
+        return maxDepth + 1;
+    }
+}
+
+----------------------------------
 import lombok.Data;
 
 import java.util.HashMap;
