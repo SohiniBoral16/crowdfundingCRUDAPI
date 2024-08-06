@@ -1,3 +1,94 @@
+import lombok.Data;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Data
+public class Graph {
+    private Map<String, PrimaryEntity> entityLookup = new HashMap<>();
+
+    public void addEntity(PrimaryEntity entity) {
+        entityLookup.put(entity.getEntityId(), entity);
+    }
+
+    public void addRelationship(String sourceEntityId, String destinationEntityId, HierarchyRelationship relationship) {
+        PrimaryEntity sourceEntity = entityLookup.get(sourceEntityId);
+        PrimaryEntity destinationEntity = entityLookup.get(destinationEntityId);
+        relationship.setSourceEntity(sourceEntity);
+        relationship.setDestinationEntity(destinationEntity);
+        sourceEntity.addRelationship(relationship);
+    }
+
+    public PrimaryEntity getEntity(String entityId) {
+        return entityLookup.get(entityId);
+    }
+
+    // Calculate the longest path
+    public int calculateLongestPath(String rootEntityId) {
+        PrimaryEntity root = entityLookup.get(rootEntityId);
+        return dfs(root);
+    }
+
+    private int dfs(PrimaryEntity entity) {
+        if (entity == null) return 0;
+        int maxDepth = 0;
+        for (HierarchyRelationship relationship : entity.getRelatedEntities()) {
+            int depth = dfs(relationship.getDestinationEntity());
+            maxDepth = Math.max(maxDepth, depth);
+        }
+        return maxDepth + 1;
+    }
+}
+
+
+import java.util.HashSet;
+import java.util.Set;
+
+public class Main {
+    public static void main(String[] args) {
+        // Initialize entities
+        PrimaryEntity entityA = new PrimaryEntity("A");
+        PrimaryEntity entityB = new PrimaryEntity("B");
+        PrimaryEntity entityC = new PrimaryEntity("C");
+        PrimaryEntity entityD = new PrimaryEntity("D");
+        PrimaryEntity entityE = new PrimaryEntity("E");
+        PrimaryEntity entityF = new PrimaryEntity("F");
+
+        // Initialize relationships based on the provided diagram
+        HierarchyRelationship r1 = new HierarchyRelationship("r1", 0.5f, false, entityA, entityB);
+        HierarchyRelationship r2 = new HierarchyRelationship("r2", 0.3f, false, entityA, entityC);
+        HierarchyRelationship r3 = new HierarchyRelationship("r3", 0.4f, false, entityB, entityD);
+        HierarchyRelationship r4 = new HierarchyRelationship("r4", 0.2f, false, entityA, entityE);
+        HierarchyRelationship r5 = new HierarchyRelationship("r5", 0.1f, false, entityC, entityF);
+        HierarchyRelationship r6 = new HierarchyRelationship("r6", 0.2f, false, entityB, entityD);
+        HierarchyRelationship r7 = new HierarchyRelationship("r7", 0.1f, false, entityE, entityF);
+
+        // Create graph and add entities
+        Graph graph = new Graph();
+        graph.addEntity(entityA);
+        graph.addEntity(entityB);
+        graph.addEntity(entityC);
+        graph.addEntity(entityD);
+        graph.addEntity(entityE);
+        graph.addEntity(entityF);
+
+        // Add relationships to the graph
+        graph.addRelationship("A", "B", r1);
+        graph.addRelationship("A", "C", r2);
+        graph.addRelationship("A", "E", r4);
+        graph.addRelationship("B", "D", r3);
+        graph.addRelationship("C", "F", r5);
+        graph.addRelationship("B", "D", r6);
+        graph.addRelationship("E", "F", r7);
+
+        // Calculate and print the longest path
+        int longestPath = graph.calculateLongestPath("A");
+        System.out.println("Longest path length: " + longestPath);
+    }
+}
+
+
+--------------------------+-------------
 public void printTree(Graph graph, String indent) {
     Party party = graph.getParty(partyId);
     double totalIndirectOwnership = party.relatedParties.stream().mapToDouble(r -> r.indirectOwnership).sum();
