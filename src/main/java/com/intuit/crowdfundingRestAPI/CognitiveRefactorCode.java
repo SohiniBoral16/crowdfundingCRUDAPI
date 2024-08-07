@@ -1,3 +1,47 @@
+public class Main {
+    public static void main(String[] args) {
+        // Initialize parties
+        Party partyA = new Party("A");
+        Party partyB = new Party("B");
+        Party partyC = new Party("C");
+        Party partyD = new Party("D");
+        Party partyE = new Party("E");
+
+        // Initialize relationships based on the provided diagram
+        Relationship r1 = new Relationship("r1", 0.5f, false, partyA, partyB);
+        Relationship r2 = new Relationship("r2", 0.3f, false, partyA, partyC);
+        Relationship r3 = new Relationship("r3", 0.4f, false, partyB, partyD);
+        Relationship r4 = new Relationship("r4", 0.2f, false, partyC, partyE);
+        Relationship r5 = new Relationship("r5", 0.1f, false, partyD, partyE);
+
+        // Create graph and add parties
+        Graph graph = new Graph();
+        graph.addParty(partyA);
+        graph.addParty(partyB);
+        graph.addParty(partyC);
+        graph.addParty(partyD);
+        graph.addParty(partyE);
+
+        // Add relationships to the graph
+        graph.addRelationship("A", "B", r1);
+        graph.addRelationship("A", "C", r2);
+        graph.addRelationship("B", "D", r3);
+        graph.addRelationship("C", "E", r4);
+        graph.addRelationship("D", "E", r5);
+
+        // Calculate levels and the longest path parent
+        graph.calculateLevelsAndLongestPathParent("A");
+
+        // Get the level and longest path parent for party E
+        int levelOfE = graph.getPartyLevel("E");
+        String longestPathParentOfE = graph.getLongestPathParent("E");
+
+        System.out.println("Level of E: " + levelOfE);
+        System.out.println("Longest path parent of E: " + longestPathParentOfE);
+    }
+}
+
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
