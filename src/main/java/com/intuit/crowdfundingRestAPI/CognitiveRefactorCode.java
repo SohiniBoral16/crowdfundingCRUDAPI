@@ -1,3 +1,85 @@
+
+
+
+import java.util.*;
+
+public class Graph {
+    private Map<String, Party> partyLookup;
+    private Map<String, Integer> levelLookup; // Stores the level of each party
+    private Map<String, String> longestPathParentLookup; // Stores the parent in the longest path
+
+    public Graph() {
+        this.partyLookup = new HashMap<>();
+        this.levelLookup = new HashMap<>();
+        this.longestPathParentLookup = new HashMap<>();
+    }
+
+    public void addParty(Party party) {
+        partyLookup.put(party.getPartyId(), party);
+    }
+
+    public void addRelationship(String sourcePartyId, String destinationPartyId, Relationship relationship) {
+        Party sourceParty = partyLookup.get(sourcePartyId);
+        Party destinationParty = partyLookup.get(destinationPartyId);
+        relationship.setSourceParty(sourceParty);
+        relationship.setDestinationParty(destinationParty);
+        sourceParty.addRelationship(relationship);
+        recalculateLevelsAndParents();
+    }
+
+    public void addRelationships(String sourcePartyId, List<Relationship> relationships) {
+        Party sourceParty = partyLookup.get(sourcePartyId);
+        for (Relationship relationship : relationships) {
+            Party destinationParty = partyLookup.get(relationship.getDestinationParty().getPartyId());
+            relationship.setSourceParty(sourceParty);
+            relationship.setDestinationParty(destinationParty);
+            sourceParty.addRelationship(relationship);
+        }
+        recalculateLevelsAndParents();
+    }
+
+    public Party getParty(String partyId) {
+        return partyLookup.get(partyId);
+    }
+
+    // Recalculate the levels and the longest path parent for each node
+    private void recalculateLevelsAndParents() {
+        levelLookup.clear();
+        longestPathParentLookup.clear();
+        for (String root : partyLookup.keySet()) {
+            if (!levelLookup.containsKey(root)) {
+                dfsCalculateLevels(root, 0, null);
+            }
+        }
+    }
+
+    private void dfsCalculateLevels(String partyId, int level, String parent) {
+        if (!levelLookup.containsKey(partyId) || level > levelLookup.get(partyId)) {
+            levelLookup.put(partyId, level);
+            if (parent != null) {
+                longestPathParentLookup.put(partyId, parent);
+            }
+        }
+
+        Party party = partyLookup.get(partyId);
+        if (party == null) return;
+
+        for (Relationship relationship : party.getRelatedPartyHierarchy()) {
+            String destinationPartyId = relationship.getDestinationParty().getPartyId();
+            dfsCalculateLevels(destinationPartyId, level + 1, partyId);
+        }
+    }
+
+    public int getPartyLevel(String partyId) {
+        return levelLookup.getOrDefault(partyId, -1);
+    }
+
+    public String getLongestPathParent(String partyId) {
+        return longestPathParentLookup.get(partyId);
+    }
+}
+
+-------------------------------------
 public class Main {
     public static void main(String[] args) {
         // Initialize parties
