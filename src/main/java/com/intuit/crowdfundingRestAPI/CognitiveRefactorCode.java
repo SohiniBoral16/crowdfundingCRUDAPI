@@ -1,3 +1,61 @@
+
+import java.util.Arrays;
+
+public class Main {
+    public static void main(String[] args) {
+        // Initialize parties
+        Party partyA = new Party("A");
+        Party partyB = new Party("B");
+        Party partyC = new Party("C");
+        Party partyD = new Party("D");
+        Party partyE = new Party("E");
+        Party partyF = new Party("F");
+        Party partyG = new Party("G");
+
+        // Initialize relationships based on the provided diagram
+        Relationship r1 = new Relationship(partyB, "r1");
+        Relationship r2 = new Relationship(partyC, "r2");
+        Relationship r3 = new Relationship(partyE, "r3");
+        Relationship r4 = new Relationship(partyD, "r4");
+        Relationship r5 = new Relationship(partyF, "r5");
+        Relationship r6 = new Relationship(partyG, "r6");
+        Relationship r7 = new Relationship(partyG, "r7"); // Additional relationship to make G multiparent
+
+        // Create graph and add parties
+        RelationshipGraphHierarchy graph = new RelationshipGraphHierarchy();
+        graph.addParty(partyA);
+        graph.addParty(partyB);
+        graph.addParty(partyC);
+        graph.addParty(partyD);
+        graph.addParty(partyE);
+        graph.addParty(partyF);
+        graph.addParty(partyG);
+
+        // Add relationships to the graph
+        graph.addRelationship("A", "B", r1);
+        graph.addRelationship("A", "C", r2);
+        graph.addRelationship("B", "E", r3);
+        graph.addRelationship("A", "D", r4);
+        graph.addRelationship("C", "F", r5);
+        graph.addRelationship("D", "G", r6);
+        graph.addRelationship("C", "G", r7);
+
+        // Calculate levels and the longest path parent
+        List<String[]> multiparentChildren = graph.recalculateLevelsAndParents();
+
+        // Print multiparent children and their longest path parents
+        for (String[] childParent : multiparentChildren) {
+            System.out.println("Multiparent child: " + childParent[0] + ", Longest path parent: " + childParent[1]);
+        }
+
+        // Print the tree structure
+        System.out.println("\nTree Structure:");
+        graph.printTree("A");
+    }
+}
+
+
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
