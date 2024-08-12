@@ -1,3 +1,77 @@
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class RelationshipGraphHierarchyBuilder {
+
+    private final CodaQueryClient codaQueryClient;
+
+    public RelationshipGraphHierarchyBuilder(CodaQueryClient codaQueryClient) {
+        this.codaQueryClient = codaQueryClient;
+    }
+
+    private static final List<String> VISUALIZATION_DOM_ATTRIBUTES = List.of(
+            "partyId", "partyNameList", "partyValidationStatus", "countryOfOrganization", "countryOfDomicile",
+            "legalForm", "formationDate", "nationalIDList", "passportNumberList", "registrationIDList", "dateOfBirth",
+            "relatedPartyList", "partyAlias", "globalKYCCollection", "relatedPartyList.roleParty.partyId",
+            "relatedPartyList.roleParty.partyNameList", "relatedPartyList.roleParty.partyAlias",
+            "relatedPartyList.roleParty.countryOfOrganization", "relatedPartyList.roleParty.legalForm"
+    );
+
+    public RelationshipGraphHierarchy buildRelationshipGraphHierarchy(List<String> partyIds) {
+        List<Party> codaParties = getPartiesFromCoda(partyIds);
+        return mapToRelationshipGraphHierarchy(codaParties);
+    }
+
+    private List<Party> getPartiesFromCoda(List<String> partyIds) {
+        long start = System.currentTimeMillis();
+        var parties = codaQueryClient.getPartiesWithAttributesPOST(partyIds, Stream.of(VISUALIZATION_DOM_ATTRIBUTES)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList()));
+
+        log.info("getPartyVisualizationById returned in {} ms.", System.currentTimeMillis() - start);
+        return parties;
+    }
+
+    private RelationshipGraphHierarchy mapToRelationshipGraphHierarchy(List<Party> codaParties) {
+        RelationshipGraphHierarchy relationshipGraph = RelationshipGraphHierarchy.builder().build();
+
+        // Step 1: Convert each CODA Party to the internal Party model and add to the graph
+        for (Party codaParty : codaParties) {
+            Party internalParty = convertToInternalPartyModel(codaParty);
+            relationshipGraph.addParty(internalParty);
+        }
+
+        // Step 2: Iterate over each Party and establish relationships
+        for (Party codaParty : codaParties) {
+            String parentPartyId = codaParty.getPartyId();
+            for (CodaRelatedParty relatedParty : codaParty.getRelatedParties()) { // Assuming a related party model
+                String childPartyId = relatedParty.getPartyId();
+                Relationship relationship = new Relationship(convertToInternalPartyModel(relatedParty), relatedParty.getRole());
+                relationshipGraph.addRelationship(parentPartyId, childPartyId, relationship);
+            }
+        }
+
+        return relationshipGraph;
+    }
+
+    private Party convertToInternalPartyModel(Party codaParty) {
+        return Party.builder()
+                .partyId(codaParty.getPartyId())
+                .partyName(codaParty.getPartyName())
+                .validationStatus(codaParty.getValidationStatus())
+                .countryOfOrganization(codaParty.getCountryOfOrganization())
+                .legalForm(codaParty.getLegalForm())
+                .partyAlias(codaParty.getPartyAlias())
+                .dateOfBirth(codaParty.getDateOfBirth())
+                .dateOfIncorporation(codaParty.getDateOfIncorporation())
+                .countrySpecificIdentifiers(codaParty.getCountrySpecificIdentifiers())
+                .pepIndicator(codaParty.getPepIndicator())
+                .build();
+    }
+}
+
+-------------------
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
