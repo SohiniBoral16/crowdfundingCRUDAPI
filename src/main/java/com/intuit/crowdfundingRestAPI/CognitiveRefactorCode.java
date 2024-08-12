@@ -1,3 +1,19 @@
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.Collection;
+
+private List<Party> getPartiesFromCoda(List<String> partyIds) {
+    log.info("getPartyVisualizationById for party={}", partyIds);
+
+    var parties = codaQueryClient.getPartiesWithAttributesPOST(partyIds, Stream.of(VISUALIZATION_DOM_ATTRIBUTES)
+            .flatMap(Collection::stream) // Use Collection::stream to flatten the list
+            .collect(Collectors.toList()));
+
+    return parties;
+}
+
+
 package com.ms.clientData.p2pservice.model.visualization;
 
 import lombok.AllArgsConstructor;
