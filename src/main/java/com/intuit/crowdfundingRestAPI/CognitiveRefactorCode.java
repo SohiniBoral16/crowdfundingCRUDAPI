@@ -1,4 +1,188 @@
+package com.ms.clientData.p2pservice.model.visualization;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Party {
+    private String partyId;
+    private String partyName;
+    private String validationStatus;
+    private String countryOfOrganization;
+    private String legalForm;
+    private String partyAlias;
+    private String legalName;
+    private String countryOfDomicile;
+    private String dateOfBirth;
+    private String dateOfIncorporation;
+    private List<String> countrySpecificIdentifiers = new ArrayList<>();
+    private String pepIndicator;
+    private List<Relationship> relationships = new ArrayList<>();
+
+    public Party(String partyId) {
+        this.partyId = partyId;
+    }
+
+    public void addRelationship(Relationship relationship) {
+        relationships.add(relationship);
+    }
+
+    public void addRelationships(List<Relationship> relationships) {
+        this.relationships.addAll(relationships);
+    }
+}
+
+package com.ms.clientData.p2pservice.model.visualization;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Relationship {
+    private String relationshipType;
+    private Float directOwnershipPercentageValue;
+    private Float indirectOwnershipPercentageValue;
+    private Float ownershipRange;
+    private Boolean significantInfluenceOverIndicator;
+    private String economicDependenceFactor;
+    private Boolean revocableTrustIndicator;
+    private String businessTitle;
+    private Party childParty;
+
+    public Relationship(Party childParty, String relationshipType) {
+        this.relationshipType = relationshipType;
+        this.childParty = childParty;
+    }
+}
+
+
+package com.ms.clientData.p2pservice.model.visualization;
+
+import lombok.Data;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Data
+public class RelationshipTreeHierarchy {
+    private String partyId;
+    private Map<String, List<RelationshipTreeHierarchy>> childrenByType = new HashMap<>();
+
+    public RelationshipTreeHierarchy(String partyId) {
+        this.partyId = partyId;
+        this.childrenByType = new HashMap<>();
+    }
+}
+
+
+package com.ms.clientData.p2pservice.model.visualization;
+
+import lombok.Builder;
+import lombok.Data;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Data
+@Builder
+public class RelationshipGraphHierarchy {
+    private final Map<String, Party> partyLookup = new HashMap<>();
+
+    public void addParty(Party party) {
+        partyLookup.put(party.getPartyId(), party);
+    }
+
+    public RelationshipTreeHierarchy addRelationship(String parentPartyId, String childPartyId, Relationship relationship) {
+        var parentParty = partyLookup.get(parentPartyId);
+        var childParty = partyLookup.get(childPartyId);
+        
+        relationship.setChildParty(childParty);
+        parentParty.addRelationship(relationship);
+
+        RelationshipTreeBuilder treeBuilder = new RelationshipTreeBuilder(partyLookup);
+        return treeBuilder.buildRelationshipTreeHierarchy(parentPartyId);
+    }
+}
+
+
+package com.ms.clientData.p2pservice.model.visualization;
+
+import java.util.ArrayList;
+import java.util.Map;
+
+public class RelationshipTreeBuilder {
+    private final Map<String, Party> partyLookup;
+
+    public RelationshipTreeBuilder(Map<String, Party> partyLookup) {
+        this.partyLookup = partyLookup;
+    }
+
+    public RelationshipTreeHierarchy buildRelationshipTreeHierarchy(String rootPartyId) {
+        var rootParty = partyLookup.get(rootPartyId);
+        var relationshipTreeHierarchy = new RelationshipTreeHierarchy(rootParty.getPartyId());
+        
+        buildTreeRecursively(rootParty, relationshipTreeHierarchy);
+        
+        return relationshipTreeHierarchy;
+    }
+
+    private void buildTreeRecursively(Party party, RelationshipTreeHierarchy treeHierarchy) {
+        for (var relationship : party.getRelationships()) {
+            var childTreeHierarchy = new RelationshipTreeHierarchy(relationship.getChildParty().getPartyId());
+            
+            treeHierarchy.getChildrenByType().computeIfAbsent(
+                relationship.getRelationshipType(),
+                k -> new ArrayList<>()
+            ).add(childTreeHierarchy);
+            
+            buildTreeRecursively(relationship.getChildParty(), childTreeHierarchy);
+        }
+    }
+}
+
+package com.ms.clientData.p2pservice;
+
+import com.ms.clientData.p2pservice.model.visualization.*;
+
+public class Main {
+    public static void main(String[] args) {
+        // Initialize parties
+        Party partyA = new Party("A");
+        Party partyB = new Party("B");
+        Party partyC = new Party("C");
+
+        // Create graph and add parties
+        RelationshipGraphHierarchy graph = RelationshipGraphHierarchy.builder().build();
+        graph.addParty(partyA);
+        graph.addParty(partyB);
+        graph.addParty(partyC);
+
+        // Add a relationship and get the RelationshipTreeHierarchy
+        Relationship r1 = new Relationship(partyB, "Parent-Child");
+        RelationshipTreeHierarchy treeHierarchy = graph.addRelationship("A", "B", r1);
+
+        // Print the tree hierarchy (or process it further)
+        System.out.println(treeHierarchy);
+    }
+}
+
+
+
+----------------------------------------
 import java.util.Arrays;
 
 public class Main {
