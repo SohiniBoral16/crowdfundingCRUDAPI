@@ -1,4 +1,57 @@
 
+
+package com.ms.clientData.p2pservice.service;
+
+import com.ms.clientData.p2pservice.model.visualization.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.Collection;
+
+public class RelationshipGraphHierarchyBuilder {
+
+    private final CodaQueryClient codaQueryClient;
+
+    public RelationshipGraphHierarchyBuilder(CodaQueryClient codaQueryClient) {
+        this.codaQueryClient = codaQueryClient;
+    }
+
+    public RelationshipGraphHierarchy buildRelationshipGraphHierarchy(List<String> partyIds) {
+        List<Party> codaParties = getPartiesFromCoda(partyIds);
+        return mapToRelationshipGraphHierarchy(codaParties);
+    }
+
+    private List<Party> getPartiesFromCoda(List<String> partyIds) {
+        long start = System.currentTimeMillis();
+        var parties = codaQueryClient.getPartiesWithAttributesPOST(partyIds, Stream.of(RelationshipGraphHierarchyBuilder.VISUALIZATION_DOM_ATTRIBUTES)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList()));
+
+        log.info("getPartyVisualizationById returned in {} ms.", System.currentTimeMillis() - start);
+        return parties;
+    }
+
+    private RelationshipGraphHierarchy mapToRelationshipGraphHierarchy(List<Party> codaParties) {
+        RelationshipGraphHierarchy relationshipGraph = RelationshipGraphHierarchy.builder().build();
+
+        // Add Parties to the graph
+        for (Party codaParty : codaParties) {
+            relationshipGraph.addParty(codaParty);
+        }
+
+        // Establish Relationships
+        for (Party codaParty : codaParties) {
+            String parentPartyId = codaParty.getPartyId();
+            for (Relationship relationship : codaParty.getRelationships()) {
+                String childPartyId = relationship.getChildParty().getPartyId();
+                relationshipGraph.addRelationship(parentPartyId, childPartyId, relationship);
+            }
+        }
+
+        return relationshipGraph;
+    }
+}
+----+--+--------++---------
 import java.util.List;
 import java.util.stream.Collectors;
 
