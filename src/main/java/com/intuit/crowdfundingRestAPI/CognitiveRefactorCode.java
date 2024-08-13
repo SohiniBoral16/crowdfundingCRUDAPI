@@ -1,4 +1,20 @@
 
+private Party getRelatedParty(PartyToPartyRelationship partyRelationship) {
+    // Assuming there is a method or field in PartyToPartyRelationship that gives the related party ID
+    String relatedPartyId = partyRelationship.getRelatedPartyId(); // Replace with actual method/field
+    
+    // Now use this ID to fetch the related Party object
+    return fetchPartyById(relatedPartyId);
+}
+
+// You might have a method like this to fetch the Party by its ID
+private Party fetchPartyById(String partyId) {
+    // Logic to fetch the Party object by its ID, possibly querying a database or calling a service
+    return partyService.getPartyById(partyId); // Replace with your actual data fetching logic
+}
+
+
+
 public PartyForTreeStructure buildRelationshipGraphHierarchy(List<String> partyIds) {
     List<Party> parties = getPartiesFromCoda(partyIds);
     log.info("code Parties: {}", parties);
