@@ -1,4 +1,38 @@
 
+private PartyForTreeStructure buildHierarchyForParty(Party party) {
+    PartyForTreeStructure partyDetails = getPartyDTO(party);
+
+    // Fetch related parties and recursively build their hierarchies
+    List<PartyToPartyRelationship> relatedPartyList = party.getRelatedPartyList().stream().collect(Collectors.toList());
+    log.info("relatedPartyList: {}", relatedPartyList);
+
+    List<Relationship> relationships = new ArrayList<>();
+    for (PartyToPartyRelationship partyRelationship : relatedPartyList) {
+        // Here we assume that the related party also has its own hierarchy
+        Relationship relationship = getRelationshipDTO(partyRelationship);
+
+        // Get the child party ID from the relationship
+        String childPartyId = partyRelationship.getRelatedPartyId(); // Assuming this method exists
+
+        if (childPartyId != null) {
+            // Fetch the child party from Coda
+            Party childParty = fetchPartyById(childPartyId);
+
+            // Recursively build the hierarchy for the child party
+            PartyForTreeStructure childPartyDetails = buildHierarchyForParty(childParty);
+            relationship.setChildParty(childPartyDetails);  // Assuming you want to link the child details
+        }
+
+        relationships.add(relationship);
+    }
+
+    partyDetails.setRelationships(relationships);
+    return partyDetails;
+}
+
+
+
+
 private Party getRelatedParty(PartyToPartyRelationship partyRelationship) {
     // Assuming there is a method or field in PartyToPartyRelationship that gives the related party ID
     String relatedPartyId = partyRelationship.getRelatedPartyId(); // Replace with actual method/field
