@@ -1,4 +1,58 @@
 
+public PartyForTreeStructure buildRelationshipGraphHierarchy(List<String> partyIds) {
+    // Fetch top-level parties
+    List<Party> parties = getPartiesFromCoda(partyIds);
+    log.info("Top-level parties: {}", parties);
+
+    PartyForTreeStructure rootPartyDetails = null;
+
+    // Iterate over top-level parties and build their hierarchy
+    for (Party codaParty : parties) {
+        rootPartyDetails = buildHierarchyForParty(codaParty);
+    }
+
+    return rootPartyDetails;
+}
+
+private PartyForTreeStructure buildHierarchyForParty(Party party) {
+    // Build the base DTO for the current party
+    PartyForTreeStructure partyDetails = getPartyDTO(party);
+
+    // Fetch related parties and recursively build their hierarchies
+    List<PartyToPartyRelationship> relatedPartyList = party.getRelatedPartyList().stream().collect(Collectors.toList());
+    log.info("Related parties for {}: {}", party.getPartyID(), relatedPartyList);
+
+    List<Relationship> relationships = new ArrayList<>();
+    for (PartyToPartyRelationship partyRelationship : relatedPartyList) {
+        // Map relationship attributes
+        Relationship relationship = getRelationshipDTO(partyRelationship);
+
+        // Get the child party ID from the relationship
+        String childPartyId = partyRelationship.getRelatedPartyId(); // Assuming this method exists
+
+        if (childPartyId != null) {
+            // Fetch the child party from Coda
+            List<String> childPartyIds = Collections.singletonList(childPartyId);
+            List<Party> childParties = getPartiesFromCoda(childPartyIds);
+
+            if (!childParties.isEmpty()) {
+                Party childParty = childParties.get(0);
+
+                // Recursively build the hierarchy for the child party
+                PartyForTreeStructure childPartyDetails = buildHierarchyForParty(childParty);
+                relationship.setChildParty(childPartyDetails);  // Link the child details
+            }
+        }
+
+        relationships.add(relationship); // Add the relationship to the list
+    }
+
+    partyDetails.setRelationships(relationships);
+    return partyDetails;
+}
+
+
+
 private PartyForTreeStructure buildHierarchyForParty(Party party) {
     PartyForTreeStructure partyDetails = getPartyDTO(party);
 
