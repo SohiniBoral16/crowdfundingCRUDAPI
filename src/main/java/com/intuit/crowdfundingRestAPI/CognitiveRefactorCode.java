@@ -3,6 +3,70 @@ public RelationshipGraphHierarchy buildRelationshipGraphHierarchy(List<String> p
     RelationshipGraphHierarchy hierarchy = new RelationshipGraphHierarchy();
 
     for (String partyId : partyIds) {
+        if (!processedParties.contains(partyId)) {
+            Party rootParty = getPartiesFromCoda(Collections.singletonList(partyId)).get(0);
+            PartyForTreeStructure rootPartyDetails = buildHierarchyForParty(rootParty, processedParties, hierarchy);
+            hierarchy.addParty(rootPartyDetails);
+        }
+    }
+
+    return hierarchy;
+}
+
+private PartyForTreeStructure buildHierarchyForParty(Party party, Set<String> processedParties, RelationshipGraphHierarchy hierarchy) {
+    String partyId = party.getPartyID();
+
+    // If the party is already processed, return the existing PartyForTreeStructure
+    if (processedParties.contains(partyId)) {
+        return hierarchy.getPartyLookup().get(partyId); // Reuse the existing structure
+    }
+
+    // Mark this party as processed
+    processedParties.add(partyId);
+
+    // Build the base DTO for the current party
+    PartyForTreeStructure partyDetails = getPartyDTO(party);
+    hierarchy.addParty(partyDetails); // Add to the hierarchy
+
+    // Fetch related parties and recursively build their hierarchies
+    List<PartyToPartyRelationship> relatedPartyList = party.getRelatedPartyList().stream().collect(Collectors.toList());
+
+    for (PartyToPartyRelationship partyRelationship : relatedPartyList) {
+        Relationship relationship = getRelationshipDTO(partyRelationship);
+        String childPartyId = partyRelationship.getRelatedPartyId();
+
+        if (childPartyId != null) {
+            if (!processedParties.contains(childPartyId)) {
+                List<Party> childParties = getPartiesFromCoda(Collections.singletonList(childPartyId));
+
+                if (!childParties.isEmpty()) {
+                    Party childParty = childParties.get(0);
+                    PartyForTreeStructure childPartyDetails = buildHierarchyForParty(childParty, processedParties, hierarchy);
+
+                    if (childPartyDetails != null) {
+                        relationship.setChildParty(childPartyDetails);
+                        partyDetails.addRelationship(relationship);
+                    }
+                }
+            } else {
+                // If the child party is already processed, link the existing structure
+                PartyForTreeStructure existingChildPartyDetails = hierarchy.getPartyLookup().get(childPartyId);
+                relationship.setChildParty(existingChildPartyDetails);
+                partyDetails.addRelationship(relationship);
+            }
+        }
+    }
+
+    return partyDetails;
+}
+
+
+
+public RelationshipGraphHierarchy buildRelationshipGraphHierarchy(List<String> partyIds) {
+    Set<String> processedParties = new HashSet<>();
+    RelationshipGraphHierarchy hierarchy = new RelationshipGraphHierarchy();
+
+    for (String partyId : partyIds) {
         Party rootParty = getPartiesFromCoda(Collections.singletonList(partyId)).get(0);
         PartyForTreeStructure rootPartyDetails = buildHierarchyForParty(rootParty, processedParties);
         hierarchy.addParty(rootPartyDetails);
