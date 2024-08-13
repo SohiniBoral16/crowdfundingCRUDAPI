@@ -1,3 +1,52 @@
+public RelationshipGraphHierarchy buildRelationshipGraphHierarchy(List<String> partyIds) {
+    Set<String> processedParties = new HashSet<>();
+    RelationshipGraphHierarchy hierarchy = new RelationshipGraphHierarchy();
+
+    for (String partyId : partyIds) {
+        Party rootParty = getPartiesFromCoda(Collections.singletonList(partyId)).get(0);
+        PartyForTreeStructure rootPartyDetails = buildHierarchyForParty(rootParty, processedParties);
+        hierarchy.addParty(rootPartyDetails);
+    }
+
+    return hierarchy;
+}
+
+private PartyForTreeStructure buildHierarchyForParty(Party party, Set<String> processedParties) {
+    String partyId = party.getPartyID();
+
+    if (processedParties.contains(partyId)) {
+        return null;
+    }
+
+    processedParties.add(partyId);
+
+    PartyForTreeStructure partyDetails = getPartyDTO(party);
+
+    List<PartyToPartyRelationship> relatedPartyList = party.getRelatedPartyList().stream().collect(Collectors.toList());
+
+    for (PartyToPartyRelationship partyRelationship : relatedPartyList) {
+        Relationship relationship = getRelationshipDTO(partyRelationship);
+        String childPartyId = partyRelationship.getRelatedPartyId();
+
+        if (childPartyId != null) {
+            List<Party> childParties = getPartiesFromCoda(Collections.singletonList(childPartyId));
+
+            if (!childParties.isEmpty()) {
+                Party childParty = childParties.get(0);
+                PartyForTreeStructure childPartyDetails = buildHierarchyForParty(childParty, processedParties);
+
+                if (childPartyDetails != null) {
+                    hierarchy.addParty(childPartyDetails);
+                    hierarchy.addRelationship(partyId, childPartyId, relationship);
+                }
+            }
+        }
+    }
+
+    return partyDetails;
+}
+------------------------------------
+
 
 public RelationshipGraphHierarchy buildRelationshipGraphHierarchy(List<String> partyIds) {
     // Use a set to track processed parties to avoid infinite loops
