@@ -1,3 +1,17 @@
+
+
+Certainly! Here's the revised version of the shaded part:
+
+---
+
+We are currently investigating the issue with our team. We will provide an update shortly. If necessary, we may request a joint session to further diagnose or clarify the issue.
+
+---
+
+Let me know if you need any more adjustments!
+
+
+
 Certainly! Here's a revised version of the email content:
 
 ---
