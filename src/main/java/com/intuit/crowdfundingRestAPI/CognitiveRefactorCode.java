@@ -10,6 +10,52 @@ private void buildHierarchyForParty(Party party, Set<String> processedParties, R
     // Mark this party as processed
     processedParties.add(partyId);
 
+    // Initialize the PartyForTreeStructure and add to the hierarchy
+    PartyForTreeStructure partyDetails = getPartyDTO(party);
+    graphHierarchy.addParty(partyDetails);
+
+    // Fetch related parties and recursively build their hierarchies
+    List<PartyToPartyRelationship> relatedPartyList = party.getRelatedPartyList().stream().collect(Collectors.toList());
+
+    if (relatedPartyList.isEmpty()) {
+        return; // No related parties to process, break the recursion
+    }
+
+    for (PartyToPartyRelationship partyRelationship : relatedPartyList) {
+        String childPartyId = partyRelationship.getRoleparty().getPartyID();
+
+        // Check if the child party ID is not null and hasn't been processed already
+        if (childPartyId != null && !processedParties.contains(childPartyId)) {
+            // Recursively process the child parties and add the relationships
+            List<Party> childParties = getPartiesFromCoda(Collections.singletonList(childPartyId));
+            for (Party childParty : childParties) {
+                PartyForTreeStructure childPartyDetails = getPartyDTO(childParty);
+                graphHierarchy.addParty(childPartyDetails);
+
+                // Add the relationship using parentPartyId and childPartyId
+                Relationship relationship = getRelationshipDTO(partyRelationship);
+                graphHierarchy.addRelationship(partyId, childPartyId, relationship);
+
+                // Recursively build the hierarchy for each child party
+                buildHierarchyForParty(childParty, processedParties, graphHierarchy);
+            }
+        }
+    }
+}
+
+
+------------------------------------
+private void buildHierarchyForParty(Party party, Set<String> processedParties, RelationshipGraphHierarchy graphHierarchy) {
+    String partyId = party.getPartyID();
+
+    // If the party has already been processed, return to avoid infinite loops
+    if (processedParties.contains(partyId)) {
+        return;
+    }
+
+    // Mark this party as processed
+    processedParties.add(partyId);
+
     // Initialize the PartyForTreeStructure
     PartyForTreeStructure partyDetails = getPartyDTO(party);
     graphHierarchy.addParty(partyDetails); // Add this party to the hierarchy
