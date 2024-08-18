@@ -1,3 +1,9 @@
+
+Then the status of duplicated parties should be "duplicate_relationship_exists"
+And the status of other related parties should be "ready_to_copy"
+
+
+
 Feature: As a user
   I want to copy related parties of the facing client to another facing client
 
