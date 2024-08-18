@@ -13,7 +13,9 @@ Feature: Copy and Validate Related Party Relationships
     When the duplicate relationships are resolved (e.g., deleted or overridden)
     And a new request is sent with the updated related parties
     Then the system revalidates the copy request payload
-    And the status of all related parties should be set to "copied"
+    And if no errors exist after revalidation
+    Then the system proceeds to copy all related parties
+    And the status of each copied party should be set to "copied"
     Then the system completes the copy process
 
   Scenario: No duplicate related parties and copy succeeds
