@@ -1,5 +1,4 @@
-
-Feature: Validate and paste related parties of the facing client to another the facing clients
+Feature: Validate and copy related parties of the facing client to another facing client
 
   Background: Validate and Copy Related Parties from one Facing Client to Another
     Given the related parties of the source facing client are provided
@@ -12,25 +11,20 @@ Feature: Validate and paste related parties of the facing client to another the 
       the status of those parties should be set to "duplicate_relationship_exists"
     And the status of other related parties should be set to "ready_to_copy"
     
-    When the duplicate relationships are resolved (e.g., skip or overridden)
+    When the duplicate relationships are resolved (e.g., deleted or overridden)
     And a new request is sent with the updated related parties
     Then the system revalidates the copy request payload
     And if no duplicate parties are found after revalidation
     Then the system proceeds to copy all related parties
     And the status of each copied party should be set to "copied"
-
-    When a server error occurs during the copy
-    Then the status of the successfully copied parties should be set to "copied"
-    And the status of the unprocessed related parties should be set to "copy_failure"
-    
     Then the system completes the copy process
 
-  Scenario: No duplicate related parties and copy succeeds
-    When no duplicate related parties are present
+  Scenario: No duplicate related parties and successful copy
+    When the system validates the copy request payload
+    And no duplicate related parties are found
     Then the system proceeds with copying the related parties
     And the status of each copied party should be set to "copied"
     Then the system completes the copy process
-
 
 
 Feature: Copy and Validate Related Party Relationships
