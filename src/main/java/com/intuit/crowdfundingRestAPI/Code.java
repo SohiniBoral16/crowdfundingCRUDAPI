@@ -1,4 +1,59 @@
 
+private boolean findFailedRelationships(TargetParty targetParty, String sourcePartyId, List<String> sourcePartyRelationshipTypeIds, List<P2PCopyRelationship> failedRelationships) {
+    boolean hasDuplicate = false;
+
+    for (var relatedParty : targetParty.getTargetPartyRelatedParties()) {
+        if (relatedParty.getTargetPartyRelatedPartyId().equalsIgnoreCase(sourcePartyId)) {
+            List<String> matchedSourceRelationshipTypeIds = sourcePartyRelationshipTypeIds.stream()
+                .filter(id -> id.equals(relatedParty.getRelatedPartyRelationshipTypeId()))
+                .collect(Collectors.toList());
+
+            if (!matchedSourceRelationshipTypeIds.isEmpty()) {
+                hasDuplicate = true;
+                failedRelationships.add(
+                    new P2PCopyRelationship(sourcePartyId, matchedSourceRelationshipTypeIds)
+                );
+            }
+        }
+    }
+
+    return hasDuplicate;
+}
+
+
+
+public List<P2PCopyValidationStatus> evaluateCopyRequest(List<P2PCopyRequest> p2pCopyRequests, List<TargetParty> targetParties) {
+    List<P2PCopyValidationStatus> validationStatuses = new ArrayList<>();
+
+    for (var targetParty : targetParties) {
+        var validationStatus = new P2PCopyValidationStatus();
+        validationStatus.setTargetPartyId(targetParty.getTargetPartyId());
+
+        boolean hasDuplicate = false;
+        List<P2PCopyRelationship> failedRelationships = new ArrayList<>();
+
+        for (P2PCopyRelationship sourceRelationship : targetParty.getSourceRelationships()) {
+            String sourcePartyId = sourceRelationship.getSourcePartyId();
+            List<String> sourcePartyRelationshipTypeIds = sourceRelationship.getRelationshipTypeIds();
+
+            hasDuplicate |= findFailedRelationships(targetParty, sourcePartyId, sourcePartyRelationshipTypeIds, failedRelationships);
+        }
+
+        if (hasDuplicate) {
+            validationStatus.setStatus("DUPLICATE_RELATIONSHIP_EXISTS");
+            validationStatus.setCopyFailedRelationships(failedRelationships);
+        } else {
+            validationStatus.setStatus("READY_TO_COPY");
+        }
+
+        validationStatuses.add(validationStatus);
+    }
+
+    return validationStatuses;
+}
+
+
+--------------------
 public List<P2PCopyValidationStatus> evaluateCopyRequest(List<P2PCopyRequest> p2pCopyRequests, List<TargetParty> targetParties) {
     List<P2PCopyValidationStatus> validationStatuses = new ArrayList<>();
 
