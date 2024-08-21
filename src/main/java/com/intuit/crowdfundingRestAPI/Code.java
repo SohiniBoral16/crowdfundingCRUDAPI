@@ -1,4 +1,11 @@
 
+List<String> targetPartyIds = p2pCopyRequest.getTargetParties().stream()
+    .filter(targetParty -> targetParty.getAction() == null || targetParty.getAction() == P2PCopyAction.READY_TO_COPY)
+    .map(P2PCopyTargetParty::getTargetPartyId)
+    .collect(Collectors.toList());
+
+
+
 var targetPartyIds = p2pCopyRequest.getTargetParties().stream()
     .filter(targetParty -> "".equals(targetParty.getAction()))
     .map(P2PCopyTargetParty::getTargetPartyId)
