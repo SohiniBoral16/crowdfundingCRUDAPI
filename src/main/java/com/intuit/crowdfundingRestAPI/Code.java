@@ -1,4 +1,37 @@
 
+if (!targetPartyIds.isEmpty()) {
+    var targetParties = fetchTargetParty(targetPartyIds);
+    var validationStatuses = evaluateValidationStatus(p2PCopyRequest, targetParties);
+
+    // Calculate the non-validated statuses
+    List<P2PCopyValidationStatus> nonValidatedStatuses = p2PCopyRequest.getTargetParties().stream()
+        .filter(targetParty -> !targetPartyIds.contains(targetParty.getTargetPartyId()))
+        .map(targetParty -> {
+            P2PCopyValidationStatus status = new P2PCopyValidationStatus();
+            status.setTargetPartyId(targetParty.getTargetPartyId());
+            status.setStatus(targetParty.getAction() != null ? targetParty.getAction().toString() : "NO_ACTION");
+            return status;
+        })
+        .collect(Collectors.toList());
+
+    // Combine validated and non-validated statuses
+    validationStatuses.addAll(nonValidatedStatuses);
+
+    p2PCopyResponse.setCopyStatus(
+        validationStatuses.stream()
+            .anyMatch(status -> "DUPLICATE_RELATIONSHIP_EXISTS".equals(status.getStatus()))
+            ? P2PCopyStatus.VALIDATION_FAILURE
+            : P2PCopyStatus.VALIDATION_SUCCESS
+    );
+
+    p2PCopyResponse.setValidationStatus(validationStatuses);
+    log.info("Validation response of Copy P2P relationship from main party: {} to target party: {}", p2pCopyRequest.getMainParty(), p2PCopyResponse);
+} else {
+    p2PCopyResponse = addNonValidatePartiesToCopyResponse(p2PCopyRequest);
+}
+
+
+
 
 else {
     boolean hasSkipAction = p2PCopyRequest.getTargetParties().stream()
