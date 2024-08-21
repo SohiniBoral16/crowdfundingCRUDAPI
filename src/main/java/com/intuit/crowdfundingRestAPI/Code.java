@@ -1,4 +1,14 @@
 
+public class CodaPartyDetails {
+    private String partyId;
+    private String partyName;
+    private List<String> relationshipTypeIds;
+    private String validationStatus;
+    // Add other relevant attributes based on what `codaQueryClient.getPartyAttributes` returns
+
+    // Getters and Setters
+}
+-------------------------
 public List<P2PCopyResponse> validateCopyResponse(List<P2PCopyRequest> p2pCopyRequests) {
     List<P2PCopyResponse> responseList = new ArrayList<>();
 
