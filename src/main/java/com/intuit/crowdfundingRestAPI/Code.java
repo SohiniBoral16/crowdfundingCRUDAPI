@@ -1,4 +1,20 @@
 
+
+else {
+    boolean hasSkipAction = p2PCopyRequest.getTargetParties().stream()
+        .anyMatch(targetParty -> P2PCopyAction.SKIP.equals(targetParty.getAction()));
+    
+    // Set the copy status based on the presence of SKIP action
+    p2PCopyResponse.setCopyStatus(hasSkipAction ? P2PCopyStatus.VALIDATION_FAILURE : P2PCopyStatus.VALIDATION_SUCCESS);
+    
+    // Add the non-validated parties to the response
+    List<P2PCopyValidationStatus> validationStatuses = addNonValidatedParties(p2PCopyRequest);
+    p2PCopyResponse.setValidationStatus(validationStatuses);
+    
+    return p2PCopyResponse;
+}
+
+
 public P2PCopyResponse validateCopyRequest(P2PCopyRequest p2PCopyRequest) {
     var targetPartyIds = validateTargetPartyIds(p2PCopyRequest);
     P2PCopyResponse p2PCopyResponse = new P2PCopyResponse();
