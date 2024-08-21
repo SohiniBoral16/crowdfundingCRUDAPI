@@ -16,6 +16,57 @@ if (!targetPartyIds.isEmpty()) {
     log.info("Validation response of Copy P2P relationship from main party: {} to target party: {}", p2pCopyRequest.getMainParty(), p2PCopyResponse);
     
     return p2PCopyResponse;
+} else if (p2pCopyRequest.getTargetParties() != null && !p2pCopyRequest.getTargetParties().isEmpty()) {
+    // No validation, just set copy status to "VALIDATION_SUCCESS"
+    P2PCopyResponse p2PCopyResponse = new P2PCopyResponse();
+    p2PCopyResponse.setCopyStatus("VALIDATION_SUCCESS");
+
+    // Map targetPartyId and action to the response object, retaining OVERWRITE actions as-is
+    List<P2PCopyValidationStatus> validationStatuses = p2pCopyRequest.getTargetParties().stream()
+        .map(targetParty -> {
+            P2PCopyValidationStatus status = new P2PCopyValidationStatus();
+            status.setTargetPartyId(targetParty.getTargetPartyId());
+            
+            // Retain OVERWRITE actions as they are
+            if (P2PCopyAction.OVERWRITE.equals(targetParty.getAction())) {
+                status.setStatus(P2PCopyAction.OVERWRITE.name());
+            } else {
+                status.setStatus(targetParty.getAction() != null ? targetParty.getAction().name() : "NO_ACTION");
+            }
+            
+            return status;
+        })
+        .collect(Collectors.toList());
+
+    p2PCopyResponse.setValidationStatus(validationStatuses);
+    
+    return p2PCopyResponse;
+} else {
+    // Handle the case where there are no target parties to validate
+    P2PCopyResponse p2PCopyResponse = new P2PCopyResponse();
+    p2PCopyResponse.setCopyStatus("VALIDATION_SUCCESS");
+    
+    return p2PCopyResponse;
+}
+
+--------------------------------------
+if (!targetPartyIds.isEmpty()) {
+    // Logic when targetPartyIds is not empty
+    var targetParties = fetchTargetParty(targetPartyIds);
+    var validationStatus = evaluateValidationStatus(p2pCopyRequest, targetParties);
+    P2PCopyResponse p2PCopyResponse = new P2PCopyResponse();
+    
+    p2PCopyResponse.setCopyStatus(
+        validationStatus.stream()
+            .anyMatch(status -> "DUPLICATE_RELATIONSHIP_EXISTS".equals(status.getStatus()))
+            ? "VALIDATION_FAILURE"
+            : "VALIDATION_SUCCESS"
+    );
+    
+    p2PCopyResponse.setValidationStatus(validationStatus);
+    log.info("Validation response of Copy P2P relationship from main party: {} to target party: {}", p2pCopyRequest.getMainParty(), p2PCopyResponse);
+    
+    return p2PCopyResponse;
 } else {
     // No validation, just set copy status to "VALIDATION_SUCCESS"
     P2PCopyResponse p2PCopyResponse = new P2PCopyResponse();
