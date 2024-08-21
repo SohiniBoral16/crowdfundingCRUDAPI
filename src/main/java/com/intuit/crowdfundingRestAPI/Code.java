@@ -1,4 +1,30 @@
 
+public TargetParty mapToTargetParty(String targetPartyId) {
+    // Fetch the party data using the common method
+    List<Party> parties = fetchPartyData(Collections.singletonList(targetPartyId));
+
+    // Assuming the first element is the party we need
+    Party party = parties.get(0);
+
+    // Map the data to TargetParty using the builder pattern
+    TargetParty targetParty = TargetParty.builder()
+        .targetPartyId(party.getPartyID())
+        .targetPartyRelatedParties(
+            party.getRelatedPartyList().stream()
+                .map(relatedParty -> TargetPartyRelatedParties.builder()
+                    .targetPartyRelatedPartyId(relatedParty.getRole1Party().getPartyID())
+                    .relatedPartyRelationshipTypeId(relatedParty.getPartyRelationshipType().getID())
+                    .relatedPartyRelationshipTypeName(relatedParty.getPartyRelationshipType().getName())
+                    .build())
+                .collect(Collectors.toList())
+        )
+        .build();
+
+    return targetParty;
+}
+
+
+----------------
 public class CodaPartyDetails {
     private String partyId;
     private String partyName;
