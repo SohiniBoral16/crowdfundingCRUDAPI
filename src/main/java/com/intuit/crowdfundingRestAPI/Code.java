@@ -1,9 +1,8 @@
 
 var targetPartyIds = p2pCopyRequest.getTargetParties().stream()
-    .filter(targetParty -> P2PCopyAction.READY_TO_COPY.equals(targetParty.getAction()))
+    .filter(targetParty -> "".equals(targetParty.getAction()))
     .map(P2PCopyTargetParty::getTargetPartyId)
-    .collect(Collectors.toList());
-
+    .collect(Collectors.toCollection(ArrayList::new));
 
 
 private boolean findFailedRelationships(TargetParty targetParty, String sourcePartyId, List<String> sourcePartyRelationshipTypeIds, List<P2PCopyRelationship> failedRelationships) {
