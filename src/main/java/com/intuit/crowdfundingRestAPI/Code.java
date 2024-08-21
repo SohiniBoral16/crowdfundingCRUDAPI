@@ -1,4 +1,73 @@
 
+public List<P2PCopyResponse> validateCopyResponse(List<P2PCopyRequest> p2pCopyRequests) {
+    List<P2PCopyResponse> responseList = new ArrayList<>();
+
+    for (P2PCopyRequest request : p2pCopyRequests) {
+        List<P2PCopyValidationStatus> validationStatuses = new ArrayList<>();
+
+        for (P2PCopyTargetParty targetParty : request.getTargetParties()) {
+            P2PCopyValidationStatus validationStatus = new P2PCopyValidationStatus();
+            validationStatus.setTargetPartyId(targetParty.getTargetPartyId());
+
+            List<P2PCopyRelationship> failedRelationships = new ArrayList<>();
+
+            // Fetch the related party details based on the target party ID
+            var partyDetails = codaQueryClient.getPartyWithAttributesPOST(
+                targetParty.getTargetPartyId(),
+                Stream.of(COPY_RELATIONSHIP_DOM_ATTRIBUTES).flatMap(Collection::stream).collect(Collectors.toList())
+            );
+
+            boolean hasDuplicate = false;
+
+            // Traverse the sourceRelationships list in the request
+            for (P2PCopyRelationship sourceRelationship : request.getSourceRelationships()) {
+                String sourcePartyId = sourceRelationship.getSourcePartyId();
+                List<String> requestRelationshipTypeIds = sourceRelationship.getRelationshipTypeIds();
+
+                // Traverse the relatedPartyList to check for matching role1Party.partyID
+                for (PartyToPartyRelationship relatedParty : partyDetails.getRelatedPartyList()) {
+                    boolean partyIdMatches = relatedParty.getRole1Party().getPartyID().equals(sourcePartyId);
+
+                    // Assuming partyRelationshipType in relatedParty is an object and we compare its ID with request's relationshipTypeIds
+                    List<String> matchedRelationshipTypeIds = requestRelationshipTypeIds.stream()
+                        .filter(id -> id.equals(relatedParty.getPartyRelationshipType().getID()))
+                        .collect(Collectors.toList());
+
+                    if (partyIdMatches && !matchedRelationshipTypeIds.isEmpty()) {
+                        hasDuplicate = true;
+
+                        // Add to failedRelationships
+                        P2PCopyRelationship failedRelationship = new P2PCopyRelationship();
+                        failedRelationship.setSourcePartyId(sourcePartyId);
+                        failedRelationship.setRelationshipTypeIds(matchedRelationshipTypeIds);
+                        failedRelationships.add(failedRelationship);
+                    }
+                }
+            }
+
+            if (hasDuplicate) {
+                validationStatus.setStatus("DUPLICATE_RELATIONSHIP_EXISTS");
+                validationStatus.setCopyFailedRelationships(failedRelationships);
+            } else {
+                validationStatus.setStatus("READY_TO_COPY");
+            }
+
+            validationStatuses.add(validationStatus);
+        }
+
+        P2PCopyResponse response = new P2PCopyResponse();
+        response.setCopyStatus(validationStatuses.stream().anyMatch(vs -> "DUPLICATE_RELATIONSHIP_EXISTS".equals(vs.getStatus()))
+            ? "VALIDATION_FAILURE"
+            : "VALIDATION_SUCCESS");
+        response.setValidationStatus(validationStatuses);
+
+        responseList.add(response);
+    }
+
+    return responseList;
+}
+
+-----------------------------
 import java.util.stream.Collectors;
 
 public List<P2PCopyResponse> validateCopyResponse(List<P2PCopyRequest> p2pCopyRequests) {
