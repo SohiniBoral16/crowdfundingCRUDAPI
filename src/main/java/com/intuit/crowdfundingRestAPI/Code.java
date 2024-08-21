@@ -1,3 +1,42 @@
+
+public List<P2PCopyValidationStatus> evaluateCopyRequest(List<P2PCopyRequest> p2pCopyRequests, List<TargetParty> targetParties) {
+    List<P2PCopyValidationStatus> validationStatuses = new ArrayList<>();
+
+    for (var targetParty : targetParties) {
+        var validationStatus = new P2PCopyValidationStatus();
+        validationStatus.setTargetPartyId(targetParty.getTargetPartyId());
+
+        List<P2PCopyRelationship> failedRelationships = new ArrayList<>();
+        boolean hasDuplicate = false;
+
+        for (P2PCopyRelationship sourceRelationship : targetParty.getSourceRelationships()) {
+            String sourcePartyId = sourceRelationship.getSourcePartyId();
+            List<String> sourcePartyRelationshipTypeIds = sourceRelationship.getRelationshipTypeIds();
+
+            // Call the refactored method
+            List<P2PCopyRelationship> newFailedRelationships = findFailedRelationships(targetParty, sourcePartyId, sourcePartyRelationshipTypeIds);
+            if (!newFailedRelationships.isEmpty()) {
+                hasDuplicate = true;
+                failedRelationships.addAll(newFailedRelationships);
+            }
+        }
+
+        if (hasDuplicate) {
+            validationStatus.setStatus("DUPLICATE_RELATIONSHIP_EXISTS");
+            validationStatus.setCopyFailedRelationships(failedRelationships);
+        } else {
+            validationStatus.setStatus("READY_TO_COPY");
+        }
+
+        validationStatuses.add(validationStatus);
+    }
+
+    return validationStatuses;
+}
+
+
+
+
 public List<P2PCopyValidationStatus> evaluateCopyRequest(List<P2PCopyRequest> p2pCopyRequests, List<TargetParty> targetParties) {
     List<P2PCopyValidationStatus> validationStatuses = new ArrayList<>();
 
