@@ -1,4 +1,56 @@
+public List<P2PCopyValidationStatus> evaluateCopyRequest(List<P2PCopyRequest> p2pCopyRequests, List<TargetParty> targetParties) {
+    List<P2PCopyValidationStatus> validationStatuses = new ArrayList<>();
 
+    for (var targetParty : targetParties) {
+        var validationStatus = new P2PCopyValidationStatus();
+        validationStatus.setTargetPartyId(targetParty.getTargetPartyId());
+
+        List<P2PCopyRelationship> failedRelationships = new ArrayList<>();
+
+        for (P2PCopyRelationship sourceRelationship : targetParty.getSourceRelationships()) {
+            String sourcePartyId = sourceRelationship.getSourcePartyId();
+            List<String> sourcePartyRelationshipTypeIds = sourceRelationship.getRelationshipTypeIds();
+
+            failedRelationships.addAll(
+                findFailedRelationships(targetParty, sourcePartyId, sourcePartyRelationshipTypeIds)
+            );
+        }
+
+        if (!failedRelationships.isEmpty()) {
+            validationStatus.setStatus("DUPLICATE_RELATIONSHIP_EXISTS");
+            validationStatus.setCopyFailedRelationships(failedRelationships);
+        } else {
+            validationStatus.setStatus("READY_TO_COPY");
+        }
+
+        validationStatuses.add(validationStatus);
+    }
+
+    return validationStatuses;
+}
+
+
+private List<P2PCopyRelationship> findFailedRelationships(TargetParty targetParty, String sourcePartyId, List<String> sourcePartyRelationshipTypeIds) {
+    List<P2PCopyRelationship> failedRelationships = new ArrayList<>();
+
+    for (var relatedParty : targetParty.getTargetPartyRelatedParties()) {
+        boolean sourcePartyIdMatches = relatedParty.getTargetPartyRelatedPartyId().equalsIgnoreCase(sourcePartyId);
+        List<String> matchedSourceRelationshipTypeIds = sourcePartyRelationshipTypeIds.stream()
+            .filter(id -> id.equals(relatedParty.getRelatedPartyRelationshipTypeId()))
+            .collect(Collectors.toList());
+
+        if (sourcePartyIdMatches && !matchedSourceRelationshipTypeIds.isEmpty()) {
+            P2PCopyRelationship failedRelationship = new P2PCopyRelationship();
+            failedRelationship.setSourcePartyId(sourcePartyId);
+            failedRelationship.setRelationshipTypeIds(matchedSourceRelationshipTypeIds);
+            failedRelationships.add(failedRelationship);
+        }
+    }
+
+    return failedRelationships;
+}
+
+----------------------------------
 public TargetParty mapToTargetParty(String targetPartyId) {
     // Fetch the party data using the common method
     List<Party> parties = fetchPartyData(Collections.singletonList(targetPartyId));
