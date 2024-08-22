@@ -1,3 +1,43 @@
+
+
+private List<TargetParty> fetchTargetParty(List<String> targetPartyIds) {
+    var targetPartiesData = getPartiesFromCoda(targetPartyIds, TARGET_PARTY_DOM_ATTRIBUTES);
+
+    List<TargetParty> targetParties = targetPartiesData.stream()
+        .map(this::transformToTargetParty)
+        .collect(Collectors.toList());
+
+    log.info("Target party details: {}", targetParties);
+    return targetParties;
+}
+
+private TargetParty transformToTargetParty(Party targetPartyData) {
+    Map<String, List<String>> relatedPartiesMap = targetPartyData.getRelatedPartyList().stream()
+        .collect(Collectors.toMap(
+            relatedParty -> relatedParty.getRole1Party().getPartyID(),
+            relatedParty -> new ArrayList<>(List.of(relatedParty.getPartyRelationshipType().getID())),
+            (existing, newEntry) -> {
+                existing.addAll(newEntry);
+                return existing;
+            }
+        ));
+
+    List<TargetPartyRelatedParties> relatedParties = relatedPartiesMap.entrySet().stream()
+        .map(entry -> TargetPartyRelatedParties.builder()
+            .relatedPartyId(entry.getKey())
+            .relationshipTypeIds(entry.getValue())
+            .build())
+        .collect(Collectors.toList());
+
+    return TargetParty.builder()
+        .targetPartyId(targetPartyData.getPartyID())
+        .targetPartyRelatedParties(relatedParties)
+        .build();
+}
+
+
+
+------------------------------
 private List<TargetParty> fetchTargetParty(List<String> targetPartyIds) {
     var targetPartiesData = getPartiesFromCoda(targetPartyIds, TARGET_PARTY_DOM_ATTRIBUTES);
     List<TargetParty> targetParties = new ArrayList<>();
