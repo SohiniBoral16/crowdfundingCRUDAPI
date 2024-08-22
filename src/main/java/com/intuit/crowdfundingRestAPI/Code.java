@@ -1,6 +1,27 @@
 
 private List<P2PCopyValidationStatus> evaluateValidationStatus(P2PCopyRequest p2PCopyRequest, List<TargetParty> targetParties) {
-    // Step 1: Iterate over sourceRelationships
+
+// Step 1: Modify the validateCopyRequest method to calculate the map
+public List<P2PCopyValidationStatus> validateCopyRequest(P2PCopyRequest p2PCopyRequest) {
+    // Calculate the sourcePartyId to relationshipTypeIds map
+    Map<String, List<String>> sourcePartyRelationshipsMap = p2PCopyRequest.getSourceRelationships().stream()
+        .collect(Collectors.toMap(
+            P2PCopyRelationship::getSourcePartyId,
+            P2PCopyRelationship::getRelationshipTypeIds
+        ));
+
+    // Step 2: Fetch target parties from CODA
+    var targetPartyIds = getTargetPartyIds(p2PCopyRequest);
+    var targetParties = fetchTargetParty(targetPartyIds);
+
+    // Step 3: Evaluate validation status
+    var validationStatuses = evaluateValidationStatus(p2PCopyRequest, targetParties, sourcePartyRelationshipsMap);
+
+    return validationStatuses;
+}
+
+// Step 4: Modify evaluateValidationStatus method to accept the map
+private List<P2PCopyValidationStatus> evaluateValidationStatus(P2PCopyRequest p2PCopyRequest, List<TargetParty> targetParties, Map<String, List<String>> sourcePartyRelationshipsMap) {
     List<P2PCopyValidationStatus> validationStatuses = new ArrayList<>();
 
     for (var targetParty : targetParties) {
@@ -9,11 +30,11 @@ private List<P2PCopyValidationStatus> evaluateValidationStatus(P2PCopyRequest p2
         boolean hasDuplicate = false;
         validationStatus.setTargetPartyId(targetParty.getTargetPartyId());
 
-        for (P2PCopyRelationship sourceRelationship : p2PCopyRequest.getSourceRelationships()) {
-            String sourcePartyId = sourceRelationship.getSourcePartyId();
-            List<String> sourcePartyRelationshipTypeIds = sourceRelationship.getRelationshipTypeIds();
+        // Step 5: Use the map in the loop
+        for (var entry : sourcePartyRelationshipsMap.entrySet()) {
+            String sourcePartyId = entry.getKey();
+            List<String> sourcePartyRelationshipTypeIds = entry.getValue();
 
-            // Step 2: Iterate over targetParty and find failed relationships
             hasDuplicate = findFailedRelationships(targetParty, sourcePartyId, sourcePartyRelationshipTypeIds, failedRelationships) || hasDuplicate;
         }
 
@@ -28,24 +49,6 @@ private List<P2PCopyValidationStatus> evaluateValidationStatus(P2PCopyRequest p2
     }
 
     return validationStatuses;
-}
-
-private boolean findFailedRelationships(TargetParty targetParty, String sourcePartyId, List<String> sourcePartyRelationshipTypeIds, List<P2PCopyRelationship> failedRelationships) {
-    boolean hasDuplicate = false;
-
-    for (var relatedParty : targetParty.getTargetPartyRelatedParties()) {
-        boolean sourcePartyIdMatches = relatedParty.getRelatedPartyId().equalsIgnoreCase(sourcePartyId);
-        List<String> matchedSourceRelationshipTypeIds = sourcePartyRelationshipTypeIds.stream()
-            .filter(id -> id.equals(relatedParty.getRelationshipTypeId()))
-            .collect(Collectors.toList());
-
-        if (sourcePartyIdMatches && !matchedSourceRelationshipTypeIds.isEmpty()) {
-            hasDuplicate = true;
-            failedRelationships.add(new P2PCopyRelationship(sourcePartyId, matchedSourceRelationshipTypeIds));
-        }
-    }
-
-    return hasDuplicate;
 }
 
 --------------------------------------
