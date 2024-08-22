@@ -2,6 +2,69 @@
 public List<P2PCopyValidationStatus> evaluateValidationStatus(
     List<TargetParty> targetParties, Map<String, List<String>> sourcePartyRelationshipsMap) {
 
+    // Map to hold validation status for each targetPartyId
+    Map<String, P2PCopyValidationStatus> validationStatusMap = new HashMap<>();
+
+    sourcePartyRelationshipsMap.forEach((sourcePartyId, sourceRelationshipTypeIds) -> {
+        targetParties.forEach(targetParty -> {
+            // Get or initialize the validation status for the target party
+            P2PCopyValidationStatus validationStatus = validationStatusMap
+                .computeIfAbsent(targetParty.getTargetPartyId(), id -> {
+                    P2PCopyValidationStatus status = new P2PCopyValidationStatus();
+                    status.setTargetPartyId(id);
+                    status.setCopyFailedRelationships(new ArrayList<>());
+                    status.setCopySuccessRelationships(new ArrayList<>());
+                    return status;
+                });
+
+            List<P2PCopyRelationship> failedRelationships = validationStatus.getCopyFailedRelationships();
+            List<P2PCopyRelationship> successRelationships = validationStatus.getCopySuccessRelationships();
+
+            boolean isMatchFound = targetParty.getTargetPartyRelatedParties().stream()
+                .filter(relatedParty -> sourcePartyId.equals(relatedParty.getRelatedPartyId()))
+                .peek(relatedParty -> {
+                    // Identify duplicate relationships
+                    List<String> duplicateRelationshipIds = relatedParty.getRelationshipTypeId().stream()
+                        .filter(sourceRelationshipTypeIds::contains)
+                        .collect(Collectors.toList());
+
+                    // Add non-duplicate relationships to success relationships
+                    List<String> nonDuplicateRelationshipTypeIds = sourceRelationshipTypeIds.stream()
+                        .filter(id -> !duplicateRelationshipIds.contains(id))
+                        .collect(Collectors.toList());
+
+                    if (!nonDuplicateRelationshipTypeIds.isEmpty()) {
+                        successRelationships.add(new P2PCopyRelationship(sourcePartyId, nonDuplicateRelationshipTypeIds));
+                    }
+
+                    // Add duplicate relationships to failed relationships
+                    if (!duplicateRelationshipIds.isEmpty()) {
+                        failedRelationships.add(new P2PCopyRelationship(sourcePartyId, duplicateRelationshipIds));
+                    }
+                })
+                .findAny()
+                .isPresent();
+
+            // If no match was found for the sourcePartyId, treat all relationships as non-duplicate
+            if (!isMatchFound) {
+                successRelationships.add(new P2PCopyRelationship(sourcePartyId, sourceRelationshipTypeIds));
+            }
+
+            // Set the status based on whether any failed relationships were found
+            validationStatus.setStatus(failedRelationships.isEmpty() ? "READY_TO_COPY" : "DUPLICATE_RELATIONSHIP_EXISTS");
+        });
+    });
+
+    return new ArrayList<>(validationStatusMap.values());
+}
+
+
+
+
+----------------------------------------
+public List<P2PCopyValidationStatus> evaluateValidationStatus(
+    List<TargetParty> targetParties, Map<String, List<String>> sourcePartyRelationshipsMap) {
+
     Map<String, P2PCopyValidationStatus> validationStatusMap = new HashMap<>();
 
     // Iterate over each entry in the sourcePartyRelationshipsMap
