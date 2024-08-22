@@ -1,4 +1,31 @@
+private Pair<List<String>, List<String>> getTargetPartyIdsAndValidatedPartyIds(P2PCopyRequest p2pCopyRequest) {
+    List<String> targetPartyIds = new ArrayList<>();
+    List<String> validatedParties = new ArrayList<>();
 
+    p2pCopyRequest.getTargetParties().stream()
+        .forEach(targetParty -> {
+            Optional<P2PCopyAction> action = Optional.ofNullable(targetParty.getAction());
+            if (action.isPresent() &&
+                (action.get().equals(P2PCopyAction.SKIP) ||
+                 action.get().equals(P2PCopyAction.OVERWRITE) ||
+                 action.get().equals(P2PCopyAction.SKIP_VALIDATION))) {
+                validatedParties.add(targetParty.getTargetPartyId());
+            } else {
+                targetPartyIds.add(targetParty.getTargetPartyId());
+            }
+        });
+
+    return Pair.of(targetPartyIds, validatedParties);
+}
+
+Pair<List<String>, List<String>> partyIdsPair = getTargetPartyIdsAndValidatedPartyIds(p2pCopyRequest);
+
+List<String> targetPartyIds = partyIdsPair.getLeft();
+List<String> validatedParties = partyIdsPair.getRight();
+
+// Use targetPartyIds and validatedParties as needed
+
+----------------------------------------
 private List<String> getSpecialActionParties(P2PCopyRequest p2pCopyRequest) {
     return p2pCopyRequest.getTargetParties().stream()
         .filter(targetParty -> {
