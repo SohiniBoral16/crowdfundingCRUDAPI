@@ -1,10 +1,24 @@
-private List<String> getTargetPartyIds(P2PCopyRequest p2pCopyRequest) {
-    return p2pCopyRequest.getTargetParties().stream()
-        .filter(targetParty -> Optional.ofNullable(targetParty.getAction())
-            .map(action -> !action.isEmpty())
-            .orElse(false))
-        .map(P2PCopyTargetParty::getTargetPartyId)
-        .collect(Collectors.toList());
+private Map<String, List<String>> getTargetPartyIdsAndSpecialActions(P2PCopyRequest p2pCopyRequest) {
+    List<String> targetPartyIds = new ArrayList<>();
+    List<String> specialActionParties = new ArrayList<>();
+
+    p2pCopyRequest.getTargetParties().stream()
+        .forEach(targetParty -> {
+            Optional<P2PCopyAction> action = Optional.ofNullable(targetParty.getAction());
+            if (action.isPresent() && 
+                (action.get().equals(P2PCopyAction.SKIP) || 
+                 action.get().equals(P2PCopyAction.OVERWRITE) || 
+                 action.get().equals(P2PCopyAction.SKIP_VALIDATION))) {
+                specialActionParties.add(targetParty.getTargetPartyId());
+            } else {
+                targetPartyIds.add(targetParty.getTargetPartyId());
+            }
+        });
+
+    Map<String, List<String>> result = new HashMap<>();
+    result.put("targetPartyIds", targetPartyIds);
+    result.put("specialActionParties", specialActionParties);
+    return result;
 }
 
 -------------------------
