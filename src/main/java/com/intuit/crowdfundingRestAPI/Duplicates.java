@@ -1,4 +1,81 @@
 
+
+private Pair<Map<String, String>, List<String>> getTargetPartyIdsAndValidatedPartyIds(P2PCopyRequest p2pCopyRequest) {
+    List<String> targetPartyIds = new ArrayList<>();
+    Map<String, String> validatedPartiesMap = new HashMap<>();
+
+    p2pCopyRequest.getTargetParties().stream().forEach(targetParty -> {
+        Optional<P2PCopyAction> action = Optional.ofNullable(targetParty.getAction());
+        if (action.isPresent() && (action.get().equals(P2PCopyAction.OVERWRITE) || action.get().equals(P2PCopyAction.SKIP_VALIDATION))) {
+            validatedPartiesMap.put(targetParty.getTargetPartyId(), action.get().toString());
+        } else {
+            targetPartyIds.add(targetParty.getTargetPartyId());
+        }
+    });
+
+    return Pair.of(validatedPartiesMap, targetPartyIds);
+}
+
+public P2PCopyResponse validateCopyRequest(P2PCopyRequest p2pCopyRequest) {
+    // Step 1: Process request
+    Pair<Map<String, String>, List<String>> partyIdsPair = getTargetPartyIdsAndValidatedPartyIds(p2pCopyRequest);
+    var targetPartyIds = partyIdsPair.getRight();
+    var validatedPartiesMap = partyIdsPair.getLeft();
+
+    // Step 2: Get targetParty from coda
+    var targetParties = fetchTargetParty(targetPartyIds);
+
+    // Step 3: Calculate sourcePartyId to relationshipTypeIds map
+    Map<String, List<String>> sourcePartyRelationshipsMap = p2pCopyRequest.getSourceRelationships().stream()
+        .collect(Collectors.toMap(P2PCopyRelationship::getSourcePartyId, P2PCopyRelationship::getRelationshipTypeIds));
+
+    // Step 4: Evaluate validation status
+    var validationStatuses = evaluateValidationStatus(sourcePartyRelationshipsMap, targetParties, validatedPartiesMap);
+
+    // Step 5: Build response
+    var p2pCopyResponse = new P2PCopyResponse();
+    p2pCopyResponse.setCopyStatus(
+        validationStatuses.stream()
+            .anyMatch(status -> "DUPLICATE_RELATIONSHIP_EXISTS".equals(status.getStatus()) || "SKIP".equals(status.getStatus())) 
+                ? P2PCopyStatus.VALIDATION_FAILURE 
+                : P2PCopyStatus.VALIDATION_SUCCESS
+    );
+    p2pCopyResponse.setValidationStatuses(validationStatuses);
+
+    log.info("Validation response of Copy P2P relationship from main party: {}, {}", p2pCopyRequest.getMainParty(), p2pCopyResponse);
+    return p2pCopyResponse;
+}
+
+public List<P2PCopyValidationStatus> evaluateValidationStatus(Map<String, List<String>> sourcePartyRelationshipsMap, 
+    List<TargetParty> targetParties, Map<String, String> validatedPartiesMap) {
+
+    var validationStatusesMap = new HashMap<String, P2PCopyValidationStatus>();
+
+    // Existing logic for calculating the validation statuses for target parties
+    // ...
+
+    // Handle already validated parties and use the provided status from the map
+    validatedPartiesMap.forEach((validatedPartyId, statusFromMap) -> {
+        P2PCopyValidationStatus validatedStatus = validationStatusesMap.computeIfAbsent(validatedPartyId, id -> {
+            var s = new P2PCopyValidationStatus();
+            s.setTargetPartyId(id);
+            s.setStatus(statusFromMap);
+            s.setCopySuccessRelationships(new ArrayList<>());
+            return s;
+        });
+
+        // Add all relationships from the source that are marked as validated
+        sourcePartyRelationshipsMap.forEach((sourcePartyId, relationshipTypeIds) -> {
+            validatedStatus.getCopySuccessRelationships().add(
+                new P2PCopyRelationship(sourcePartyId, relationshipTypeIds)
+            );
+        });
+    });
+
+    return new ArrayList<>(validationStatusesMap.values());
+}
+
+----------------------------------------
 public List<P2PCopyValidationStatus> evaluateValidationStatus(
     Map<String, List<String>> sourcePartyRelationshipsMap, 
     List<TargetParty> targetParties, 
