@@ -1,10 +1,8 @@
 
-
 public List<P2PCopyValidationStatus> evaluateValidationStatus(
     Map<String, List<String>> sourcePartyRelationshipsMap, 
-    List<TargetParty> targetParties,
-    List<String> validatedParties, 
-    P2PCopyRequest p2pCopyRequest) {
+    List<TargetParty> targetParties, 
+    List<String> validatedParties) {
 
     var validationStatusMap = new HashMap<String, P2PCopyValidationStatus>();
 
@@ -61,21 +59,13 @@ public List<P2PCopyValidationStatus> evaluateValidationStatus(
             return s;
         });
 
-        // Preserve the original action code as status
-        p2pCopyRequest.getTargetParties().stream()
-            .filter(p -> p.getTargetPartyId().equals(validatedPartyId))
-            .findFirst()
-            .ifPresent(validatedTargetParty -> {
-                validatedStatus.setStatus(validatedTargetParty.getAction().toString());
-
-                // Add all relationships from the source that are marked as validated
-                p2pCopyRequest.getSourceRelationships().forEach(sourceRelationship -> {
-                    validatedStatus.getCopySuccessRelationships().add(new P2PCopyRelationship(
-                        sourceRelationship.getSourcePartyId(),
-                        sourceRelationship.getRelationshipTypeIds()
-                    ));
-                });
-            });
+        // Add all relationships from the source that are marked as validated
+        sourcePartyRelationshipsMap.forEach((sourcePartyId, relationshipTypeIds) -> {
+            validatedStatus.getCopySuccessRelationships().add(new P2PCopyRelationship(
+                sourcePartyId,
+                relationshipTypeIds
+            ));
+        });
     });
 
     return new ArrayList<>(validationStatusMap.values());
