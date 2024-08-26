@@ -1,4 +1,24 @@
+private Pair<Map<String, String>, List<String>> getTargetPartyIdsAndValidatedPartyIds(P2PCopyRequest p2pCopyRequest) {
+    var targetPartyIds = new ArrayList<String>();
+    var validatedPartiesMap = new HashMap<String, String>();
 
+    p2pCopyRequest.getTargetParties().stream()
+        .filter(targetParty -> targetParty.getAction() != P2PCopyAction.SKIP)
+        .forEach(targetParty -> {
+            var action = targetParty.getAction();
+
+            if (action == P2PCopyAction.OVERWRITE || action == P2PCopyAction.SKIP_VALIDATION) {
+                validatedPartiesMap.put(targetParty.getTargetPartyId(), action.toString());
+            } else {
+                targetPartyIds.add(targetParty.getTargetPartyId());
+            }
+        });
+
+    return Pair.of(validatedPartiesMap, targetPartyIds);
+}
+
+
+----------------------------
 public P2PCopyResponse validateCopyRequest(P2PCopyRequest p2pCopyRequest) {
     var mainParty = p2pCopyRequest.getMainParty();
 
