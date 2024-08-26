@@ -1,4 +1,57 @@
 
+public P2PCopyResponse validateCopyRequest(P2PCopyRequest p2pCopyRequest) {
+    var mainParty = p2pCopyRequest.getMainPartyId();
+
+    // Step 1: Filter out skip, skip_validation, and overwrite relations (skip needs to be removed from the list)
+    var partyIdsPair = getTargetPartyIdsAndValidatedPartyIds(p2pCopyRequest);
+    var validatedPartiesMap = partyIdsPair.getLeft();
+    var targetPartyIds = Optional.ofNullable(partyIdsPair.getRight()).orElse(Collections.emptyList());
+
+    // If targetPartyIds is empty after filtering, handle accordingly
+    if (targetPartyIds.isEmpty()) {
+        log.info("No target parties to validate for main party: {}", mainParty);
+        return buildEmptyResponse(mainParty);
+    }
+
+    // Step 2: returns List<TargetPartyId>
+    var targetParties = fetchTargetParty(targetPartyIds);
+
+    // Calculate the sourcePartyId to relationshipTypeIds map
+    var sourcePartyRelationshipsMap = p2pCopyRequest.getSourceRelationships().stream()
+        .collect(Collectors.toMap(
+            P2PCopyRelationship::getSourcePartyId,
+            P2PCopyRelationship::getRelationshipTypeIds
+        ));
+
+    // Step 3: Evaluate validation status
+    var validationStatuses = evaluateValidationStatus(sourcePartyRelationshipsMap, targetParties, validatedPartiesMap);
+
+    // Step 4: build response
+    var p2pCopyResponse = new P2PCopyResponse();
+    p2pCopyResponse.setMainParty(mainParty);
+    p2pCopyResponse.setCopyStatus(
+        validationStatuses.stream()
+            .anyMatch(status -> P2PCopyStatus.DUPLICATE_RELATIONSHIP_EXISTS.equals(status.getStatus()) || P2PCopyStatus.SKIP.equals(status.getStatus())) 
+            ? P2PCopyStatus.VALIDATION_FAILURE 
+            : P2PCopyStatus.VALIDATION_SUCCESS
+    );
+
+    p2pCopyResponse.setValidationStatus(validationStatuses);
+    log.info("Validation response of copy P2P relationship from main party: {} to target party: {}", p2pCopyRequest.getMainPartyId(), p2pCopyResponse);
+    return p2pCopyResponse;
+}
+
+// Method to build an empty response when no target parties are present
+private P2PCopyResponse buildEmptyResponse(String mainParty) {
+    var response = new P2PCopyResponse();
+    response.setMainParty(mainParty);
+    response.setCopyStatus(P2PCopyStatus.VALIDATION_SUCCESS);
+    response.setValidationStatus(Collections.emptyList());
+    return response;
+}
+
+
+--------------------------------------
 private Pair<Map<String, String>, List<String>> getTargetPartyIdsAndValidatedPartyIds(P2PCopyRequest p2pCopyRequest) {
     List<String> targetPartyIds = new ArrayList<>();
     Map<String, String> validatedPartiesMap = new HashMap<>();
