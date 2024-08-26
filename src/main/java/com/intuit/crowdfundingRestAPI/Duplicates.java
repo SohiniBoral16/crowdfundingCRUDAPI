@@ -1,4 +1,20 @@
 
+// Step 1: Filter out target parties not to be validated. Assume P2PCopyRequest has equals set on TargetPartyId
+p2pCopyRequest.getTargetParties().removeAll(
+    Optional.ofNullable(p2pCopyRequest.getTargetParties().stream()
+        .filter(targetParty -> P2PCopyAction.SKIP.equals(targetParty.getAction()))
+        .collect(Collectors.toSet())).orElse(Collections.emptySet())
+);
+
+p2pCopyRequest.getTargetParties().removeAll(
+    Optional.ofNullable(p2pCopyRequest.getTargetParties().stream()
+        .filter(targetParty -> List.of(P2PCopyAction.OVERWRITE, P2PCopyAction.SKIP_VALIDATION).contains(targetParty.getAction()))
+        .collect(Collectors.toSet())).orElse(Collections.emptySet())
+);
+
+
+
+
 public List<P2PCopyValidationStatus> evaluateValidationStatus(
         Map<String, List<String>> sourcePartyRelationshipsMap,
         List<TargetParty> targetParties,
