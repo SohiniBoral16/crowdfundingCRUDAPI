@@ -1,4 +1,28 @@
 
+
+// Calculate skipTargetParties
+Set<P2PCopyTargetParty> skipTargetParties = 
+    p2CopyRequest.getTargetParties() != null 
+        ? p2CopyRequest.getTargetParties().stream()
+            .filter(targetParty -> P2PCopyAction.SKIP.equals(targetParty.getAction()))
+            .collect(Collectors.toSet())
+        : Collections.emptySet();
+
+// Calculate excludeValidationTargetParties
+Set<P2PCopyTargetParty> excludeValidationTargetParties = 
+    p2CopyRequest.getTargetParties() != null 
+        ? p2CopyRequest.getTargetParties().stream()
+            .filter(targetParty -> 
+                P2PCopyAction.OVERWRITE.equals(targetParty.getAction()) 
+                || P2PCopyAction.SKIP_VALIDATION.equals(targetParty.getAction()))
+            .collect(Collectors.toSet())
+        : Collections.emptySet();
+
+// Remove skip and exclude validation target parties from the main list
+p2CopyRequest.getTargetParties().removeAll(skipTargetParties);
+p2CopyRequest.getTargetParties().removeAll(excludeValidationTargetParties);
+
+
 // Step 1: Filter out target parties not to be validated. Assume P2PCopyRequest has equals set on TargetPartyId
 p2pCopyRequest.getTargetParties().removeAll(
     Optional.ofNullable(p2pCopyRequest.getTargetParties().stream()
