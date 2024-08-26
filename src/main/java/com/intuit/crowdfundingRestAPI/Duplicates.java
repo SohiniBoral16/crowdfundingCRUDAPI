@@ -1,5 +1,53 @@
 
 public P2PCopyResponse validateCopyRequest(P2PCopyRequest p2pCopyRequest) {
+    var mainParty = p2pCopyRequest.getMainParty();
+
+    // Filter out skip, skip_validation, and overwrite relations
+    var partyIdsPair = getTargetPartyIdsAndValidatedPartyIds(p2pCopyRequest);
+    var targetPartyIds = partyIdsPair.getRight();
+    var validatedPartiesMap = partyIdsPair.getLeft();
+
+    // Step 1: Process target parties (if any)
+    var targetParties = fetchTargetParty(targetPartyIds);
+
+    // Calculate the sourcePartyId to relationshipTypeIds map
+    var sourcePartyRelationshipsMap = p2pCopyRequest.getSourceRelationships().stream()
+        .collect(Collectors.toMap(
+            P2PCopyRelationship::getSourcePartyId,
+            P2PCopyRelationship::getRelationshipTypeIds
+        ));
+
+    // Step 3: Evaluate validation status
+    List<P2PCopyValidationStatus> validationStatuses = new ArrayList<>();
+
+    // Evaluate target parties if present
+    if (!targetParties.isEmpty()) {
+        validationStatuses.addAll(evaluateValidationStatus(sourcePartyRelationshipsMap, targetParties, validatedPartiesMap));
+    }
+
+    // Evaluate validated parties if present
+    if (!validatedPartiesMap.isEmpty()) {
+        validationStatuses.addAll(evaluateValidationStatusForValidatedParties(sourcePartyRelationshipsMap, validatedPartiesMap));
+    }
+
+    // Step 4: Build response
+    var p2pCopyResponse = new P2PCopyResponse();
+    p2pCopyResponse.setMainParty(mainParty);
+    p2pCopyResponse.setCopyStatus(
+        validationStatuses.stream()
+            .anyMatch(status -> P2PCopyStatus.DUPLICATE_RELATIONSHIP_EXISTS.equals(status.getStatus()))
+            ? P2PCopyStatus.VALIDATION_FAILURE
+            : P2PCopyStatus.VALIDATION_SUCCESS
+    );
+    p2pCopyResponse.setValidationStatus(validationStatuses);
+
+    log.info("Validation response of Copy P2P relationship from main party: {}, to target party: {}", p2pCopyRequest.getMainParty(), p2pCopyResponse);
+    return p2pCopyResponse;
+}
+
+
+
+public P2PCopyResponse validateCopyRequest(P2PCopyRequest p2pCopyRequest) {
     var mainParty = p2pCopyRequest.getMainPartyId();
 
     // Step 1: Filter out skip, skip_validation, and overwrite relations (skip needs to be removed from the list)
