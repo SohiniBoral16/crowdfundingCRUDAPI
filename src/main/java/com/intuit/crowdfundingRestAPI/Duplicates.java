@@ -1,4 +1,24 @@
 
+private Pair<Map<String, String>, List<String>> getTargetPartyIdsAndValidatedPartyIds(P2PCopyRequest p2pCopyRequest) {
+    List<String> targetPartyIds = new ArrayList<>();
+    Map<String, String> validatedPartiesMap = new HashMap<>();
+
+    p2pCopyRequest.getTargetParties().stream()
+        .filter(targetParty -> Optional.ofNullable(targetParty.getAction()).isPresent())
+        .forEach(targetParty -> {
+            Optional<P2PCopyAction> action = Optional.ofNullable(targetParty.getAction());
+            if (action.isPresent() && 
+               (action.get().equals(P2PCopyAction.OVERWRITE) || action.get().equals(P2PCopyAction.SKIP_VALIDATION))) {
+                validatedPartiesMap.put(targetParty.getTargetPartyId(), action.get().toString());
+            } else {
+                targetPartyIds.add(targetParty.getTargetPartyId());
+            }
+        });
+
+    return Pair.of(validatedPartiesMap, targetPartyIds);
+}
+
+--------------------------------------
 public List<P2PCopyValidationStatus> evaluateValidationStatus(
     Map<String, List<String>> sourcePartyRelationshipsMap,
     List<TargetParty> targetParties,
