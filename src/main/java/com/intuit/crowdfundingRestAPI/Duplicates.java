@@ -1,5 +1,39 @@
+for (Map.Entry<String, List<String>> relatedPartyIdRelationsEntry : relatedPartyIdToRelationshipIdsByTargetPartyId.entrySet()) {
+    String relatedPartyId = relatedPartyIdRelationsEntry.getKey();
+    List<String> targetRelationshipTypeIds = relatedPartyIdRelationsEntry.getValue();
 
+    // Initialize lists for duplicate and non-duplicate relationships
+    List<String> duplicateRelationshipIds = new ArrayList<>();
+    List<String> nonDuplicateRelationshipIds = new ArrayList<>();
 
+    if (sourceRelationshipsByPartyId.containsKey(relatedPartyId)) {
+        List<String> sourceRelationshipTypeIds = sourceRelationshipsByPartyId.get(relatedPartyId);
+
+        // Separate duplicate and non-duplicate relationships
+        for (String typeId : targetRelationshipTypeIds) {
+            if (sourceRelationshipTypeIds != null && sourceRelationshipTypeIds.contains(typeId)) {
+                duplicateRelationshipIds.add(typeId);
+            } else {
+                nonDuplicateRelationshipIds.add(typeId);
+            }
+        }
+    } else {
+        // If relatedPartyId is not found in sourceRelationshipsByPartyId, consider all as non-duplicate
+        nonDuplicateRelationshipIds.addAll(targetRelationshipTypeIds);
+    }
+
+    // Add the duplicate relationships to the failed relationships list if any exist
+    if (!duplicateRelationshipIds.isEmpty()) {
+        copyFailedRelationships.add(new P2PCopyRelationship(relatedPartyId, duplicateRelationshipIds));
+        p2pCopyStatus = P2PCopyStatus.DUPLICATE_RELATIONSHIP_EXISTS;
+    }
+
+    // Add the non-duplicate relationships to the success relationships list if any exist
+    if (!nonDuplicateRelationshipIds.isEmpty()) {
+        copySuccessRelationships.add(new P2PCopyRelationship(relatedPartyId, nonDuplicateRelationshipIds));
+    }
+}
+--------------------
 // Calculate skipTargetParties
 Set<P2PCopyTargetParty> skipTargetParties = 
     p2CopyRequest.getTargetParties() != null 
