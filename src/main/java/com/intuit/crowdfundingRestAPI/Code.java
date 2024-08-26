@@ -1,3 +1,39 @@
+
+private TargetParty mapToTargetParty(Party targetPartyData) {
+    // Mapping related parties with null checks
+    var relatedPartiesMap = Optional.ofNullable(targetPartyData.getRelatedPartyList())
+        .map(Collection::stream)
+        .orElseGet(Stream::empty)
+        .collect(Collectors.toMap(
+            relatedParty -> Optional.ofNullable(relatedParty.getRoleParty()).map(RoleParty::getPartyID).orElse(null),
+            relatedParty -> Optional.ofNullable(relatedParty.getPartyRelationshipType()).map(types -> 
+                types.stream().map(RelationshipType::getID).collect(Collectors.toList())
+            ).orElseGet(ArrayList::new),
+            (existing, newEntry) -> {
+                existing.addAll(newEntry);
+                return existing;
+            }
+        ));
+
+    // Converting related parties map to a list
+    var relatedParties = relatedPartiesMap.entrySet().stream()
+        .map(entry -> TargetPartyRelatedParties.builder()
+            .relatedPartyId(entry.getKey())
+            .relationshipTypeId(entry.getValue())
+            .build()
+        )
+        .collect(Collectors.toList());
+
+    // Building the TargetParty object
+    return TargetParty.builder()
+        .targetPartyId(Optional.ofNullable(targetPartyData.getPartyID()).orElse(""))
+        .targetPartyRelatedParties(relatedParties)
+        .build();
+}
+
+
+
+
 private Pair<List<String>, List<String>> getTargetPartyIdsAndValidatedPartyIds(P2PCopyRequest p2pCopyRequest) {
     List<String> targetPartyIds = new ArrayList<>();
     List<String> validatedParties = new ArrayList<>();
