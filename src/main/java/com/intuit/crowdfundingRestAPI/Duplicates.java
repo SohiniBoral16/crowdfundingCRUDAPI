@@ -1,3 +1,51 @@
+
+// Main processing using streams
+relationIdsByRelatedPartyId.entrySet().stream()
+    .forEach(entry -> {
+        var relatedPartyId = entry.getKey();
+        var targetRelationshipTypeIds = entry.getValue();
+
+        var duplicateRelationshipIds = findDuplicateRelationshipIds(relatedPartyId, targetRelationshipTypeIds);
+        var nonDuplicateRelationshipIds = findNonDuplicateRelationshipIds(relatedPartyId, targetRelationshipTypeIds, duplicateRelationshipIds);
+
+        handleRelationships(relatedPartyId, duplicateRelationshipIds, nonDuplicateRelationshipIds);
+    });
+
+// Processing source relationships for Ready to Copy status using streams
+sourceRelationshipsByPartyId.entrySet().stream()
+    .filter(entry -> relationIdsByRelatedPartyId.containsKey(entry.getKey()))
+    .forEach(entry -> copySuccessRelationships.add(new P2PCopyRelationship(entry.getKey(), entry.getValue())));
+
+// Helper methods
+private List<String> findDuplicateRelationshipIds(String relatedPartyId, List<String> targetRelationshipTypeIds) {
+    return targetRelationshipTypeIds.stream()
+            .filter(typeId -> sourceRelationshipTypeIdsByPartyId.getOrDefault(relatedPartyId, List.of()).contains(typeId))
+            .collect(Collectors.toList());
+}
+
+private List<String> findNonDuplicateRelationshipIds(String relatedPartyId, List<String> targetRelationshipTypeIds, List<String> duplicateRelationshipIds) {
+    return targetRelationshipTypeIds.stream()
+            .filter(typeId -> !duplicateRelationshipIds.contains(typeId))
+            .collect(Collectors.toList());
+}
+
+private void handleRelationships(String relatedPartyId, List<String> duplicateRelationshipIds, List<String> nonDuplicateRelationshipIds) {
+    if (!duplicateRelationshipIds.isEmpty()) {
+        copyFailedRelationships.add(new P2PCopyRelationship(relatedPartyId, duplicateRelationshipIds));
+        p2PCopyStatus = P2PCopyStatus.DUPLICATE_RELATIONSHIP_EXISTS;
+    }
+
+    if (!nonDuplicateRelationshipIds.isEmpty()) {
+        copySuccessRelationships.add(new P2PCopyRelationship(relatedPartyId, nonDuplicateRelationshipIds));
+    }
+}
+
+
+
+
+
+
+--------------------------------
 public List<P2PCopyValidationStatus> determineValidationStatusForTargetParties(
 
 public List<P2PCopyValidationStatus> evaluateValidationStatusForTargetParties(
