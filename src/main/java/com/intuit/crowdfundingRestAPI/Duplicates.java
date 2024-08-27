@@ -1,4 +1,52 @@
 
+public void processRelationships(Map<String, List<String>> relationIdsByRelatedPartyId, 
+                                 Map<String, List<String>> sourceRelationshipsByPartyId) {
+    relationIdsByRelatedPartyId.entrySet().stream()
+        .forEach(entry -> {
+            var relatedPartyId = entry.getKey();
+            var targetRelationshipTypeIds = entry.getValue();
+
+            var duplicateRelationshipIds = findDuplicateRelationshipIds(relatedPartyId, targetRelationshipTypeIds, sourceRelationshipsByPartyId);
+            var nonDuplicateRelationshipIds = findNonDuplicateRelationshipIds(targetRelationshipTypeIds, duplicateRelationshipIds);
+
+            handleRelationships(relatedPartyId, duplicateRelationshipIds, nonDuplicateRelationshipIds, sourceRelationshipsByPartyId);
+        });
+
+    sourceRelationshipsByPartyId.entrySet().stream()
+        .filter(entry -> relationIdsByRelatedPartyId.containsKey(entry.getKey()))
+        .forEach(entry -> copySuccessRelationships.add(new P2PCopyRelationship(entry.getKey(), entry.getValue())));
+}
+
+// Helper Methods
+private List<String> findDuplicateRelationshipIds(String relatedPartyId, List<String> targetRelationshipTypeIds, 
+                                                  Map<String, List<String>> sourceRelationshipsByPartyId) {
+    return targetRelationshipTypeIds.stream()
+            .filter(typeId -> sourceRelationshipsByPartyId.getOrDefault(relatedPartyId, List.of()).contains(typeId))
+            .collect(Collectors.toList());
+}
+
+private List<String> findNonDuplicateRelationshipIds(List<String> targetRelationshipTypeIds, 
+                                                     List<String> duplicateRelationshipIds) {
+    return targetRelationshipTypeIds.stream()
+            .filter(typeId -> !duplicateRelationshipIds.contains(typeId))
+            .collect(Collectors.toList());
+}
+
+private void handleRelationships(String relatedPartyId, List<String> duplicateRelationshipIds, 
+                                  List<String> nonDuplicateRelationshipIds, 
+                                  Map<String, List<String>> sourceRelationshipsByPartyId) {
+    if (!duplicateRelationshipIds.isEmpty()) {
+        copyFailedRelationships.add(new P2PCopyRelationship(relatedPartyId, duplicateRelationshipIds));
+        p2PCopyStatus = P2PCopyStatus.DUPLICATE_RELATIONSHIP_EXISTS;
+    }
+
+    if (!nonDuplicateRelationshipIds.isEmpty()) {
+        copySuccessRelationships.add(new P2PCopyRelationship(relatedPartyId, nonDuplicateRelationshipIds));
+    }
+}
+
+
+---------------------------------------
 // Main processing using streams
 relationIdsByRelatedPartyId.entrySet().stream()
     .forEach(entry -> {
