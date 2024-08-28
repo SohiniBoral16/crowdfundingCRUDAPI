@@ -7,6 +7,40 @@ private TargetParty mapToTargetParty(Party targetPartyData) {
                     .collect(Collectors.toMap(
                             relatedParty -> Optional.ofNullable(relatedParty.getRole1party())
                                     .map(roleParty -> roleParty.getPartyID())
+                                    .orElse(null),
+                            relatedParty -> Optional.ofNullable(relatedParty.getRelationshipTypeID())
+                                    .map(idList -> idList.stream()
+                                            .map(typeId -> Optional.ofNullable(typeId).orElse(null))
+                                            .collect(Collectors.toList())
+                                    ).orElse(new ArrayList<>()),
+                            (existing, newEntry) -> {
+                                existing.addAll(newEntry);
+                                return existing;
+                            })
+                    )
+            ).orElseGet(Collections::emptyMap);
+
+    var relatedParties = relatedPartiesMap.entrySet().stream()
+            .map(entry -> TargetPartyRelatedParties.builder()
+                    .relatedPartyId(entry.getKey())
+                    .relationshipTypeId(entry.getValue())
+                    .build())
+            .collect(Collectors.toList());
+
+    return TargetParty.builder()
+            .targetPartyId(targetPartyData.getPartyID())
+            .targetPartyRelatedParties(relatedParties)
+            .build();
+}
+
+
+private TargetParty mapToTargetParty(Party targetPartyData) {
+    // Ensure that targetPartyData and its methods return non-null values using Optional
+    var relatedPartiesMap = Optional.ofNullable(targetPartyData.getRelatedPartyList())
+            .map(list -> list.stream()
+                    .collect(Collectors.toMap(
+                            relatedParty -> Optional.ofNullable(relatedParty.getRole1party())
+                                    .map(roleParty -> roleParty.getPartyID())
                                     .orElseThrow(() -> new IllegalStateException("Role1Party ID cannot be null")),
                             relatedParty -> Optional.ofNullable(relatedParty.getRelationshipTypeID())
                                     .map(idList -> idList.stream()
