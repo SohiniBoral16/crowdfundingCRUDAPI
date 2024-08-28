@@ -1,4 +1,33 @@
 
+package com.ms.clientData.p2pservice.model.p2p.copy;
+
+import java.util.Optional;
+
+public enum P2PCopyStatus {
+    SUCCESS,
+    FAILURE,
+    DUPLICATE_RELATIONSHIP_EXISTS,
+    VALIDATION_FAILURE("Duplicate Relationships exists within the selected Parties"),
+    VALIDATION_SUCCESS("No Duplicate Relationships exists"),
+    READY_TO_COPY,
+    SKIPPED_VALIDATION;
+
+    private final String message;
+
+    P2PCopyStatus() {
+        this.message = null; // Default for enums without a message
+    }
+
+    P2PCopyStatus(String message) {
+        this.message = message; // For enums with a specific message
+    }
+
+    public Optional<String> getMessage() {
+        return Optional.ofNullable(message);
+    }
+}
+
+-----------------------------
 
 private TargetParty mapToTargetParty(Party targetPartyData) {
     // Ensure that targetPartyData and its methods return non-null values using Optional
