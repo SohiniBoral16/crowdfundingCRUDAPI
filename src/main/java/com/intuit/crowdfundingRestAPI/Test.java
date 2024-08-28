@@ -1,4 +1,65 @@
 
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.when;
+
+public class P2PServiceTest {
+
+    @Mock
+    private CodaQueryClient codaQueryClient; // Mocking the Coda Query Client
+
+    @InjectMocks
+    private P2PService p2pService; // Injecting the service under test
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testFetchTargetPartyAndRelationshipMapping() {
+        // Mocking the coda response
+        Map<String, List<String>> codaResponse = new HashMap<>();
+        codaResponse.put("BBB02682978", Arrays.asList("8021501", "8021585", "8021765", "8058647", "8058658"));
+        codaResponse.put("BBB02668742", Arrays.asList("8021761"));
+        codaResponse.put("BBB03882887", Arrays.asList("8021761"));
+        codaResponse.put("BBB02532943", Arrays.asList("8021501", "8058654"));
+        codaResponse.put("BBB02633914", Arrays.asList("8058658"));
+
+        when(codaQueryClient.getPartiesByIdWithAttributes(anyList(), anyString())).thenReturn(codaResponse);
+
+        // Call the method under test
+        List<String> validatePartyIds = Arrays.asList("BBB02682978", "BBB02668742", "BBB03882887", "BBB02532943", "BBB02633914");
+        List<TargetParty> targetParties = p2pService.fetchTargetParty(validatePartyIds);
+
+        // Assertions to validate the relationships
+        assertEquals(5, targetParties.size());
+
+        TargetParty party1 = targetParties.get(0);
+        assertEquals("BBB02682978", party1.getTargetPartyId());
+        assertEquals(5, party1.getTargetPartyRelatedParties().size());
+
+        TargetParty party2 = targetParties.get(1);
+        assertEquals("BBB02668742", party2.getTargetPartyId());
+        assertEquals(1, party2.getTargetPartyRelatedParties().size());
+
+        // Additional assertions for other parties as necessary
+    }
+}
+
+
 private TargetParty relationshipIdsByRelatedParty(List<String> codaResponse) {
     // Logic to parse the list of strings and create the TargetParty object
     // This is a placeholder; actual implementation depends on your logic.
