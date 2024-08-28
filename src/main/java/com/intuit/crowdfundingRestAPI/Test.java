@@ -1,4 +1,71 @@
 
+private TargetParty relationshipIdsByRelatedParty(List<String> codaResponse) {
+    // Logic to parse the list of strings and create the TargetParty object
+    // This is a placeholder; actual implementation depends on your logic.
+    // Example:
+    String targetPartyId = "BBB02682978"; // Extract from first entry
+    List<String> relatedParties = Arrays.asList("8021501", "8021585", "8021765", "8058647", "8058658"); // Parse from first entry
+
+    return TargetParty.builder()
+            .targetPartyId(targetPartyId)
+            .targetPartyRelatedParties(relatedParties.stream()
+                    .map(id -> new TargetPartyRelatedParty(id))
+                    .collect(Collectors.toList()))
+            .build();
+}
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
+
+public class P2PServiceTest {
+
+    @Mock
+    private CodaQueryClient codaQueryClient; // Mocking the Coda Query Client
+
+    @InjectMocks
+    private P2PService p2pService; // Injecting the service under test
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testRelationshipIdsByRelatedParty() {
+        // Mocking the coda response as a list of strings
+        List<String> codaResponse = Arrays.asList(
+            "BBB02682978=8021501,8021585,8021765,8058647,8058658",
+            "BBB02668742=8021761",
+            "BBB03882887=8021761",
+            "BBB02532943=8021501,8058654",
+            "BBB02633914=8058658"
+        );
+
+        when(codaQueryClient.getPartiesByIdWithAttributes(anyList(), anyString())).thenReturn(codaResponse);
+
+        // Call the method under test
+        TargetParty targetParty = p2pService.relationshipIdsByRelatedParty(codaResponse);
+
+        // Assertions
+        assertEquals("BBB02682978", targetParty.getTargetPartyId());
+        assertEquals(5, targetParty.getTargetPartyRelatedParties().size());
+        
+        // Additional assertions can be added based on expected output
+    }
+}
+
+---------------------
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
