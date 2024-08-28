@@ -1,3 +1,70 @@
+
+@Test
+public void testValidateCopyRequest_AllSkipActions() {
+    P2PCopyRequest copyRequest = createTestP2PCopyRequestWithAllSkipActions();
+    P2PCopyResponse response = p2PService.validateCopyRequest(copyRequest);
+
+    List<String> validatePartyIds = response.getValidationStatus();
+    assertTrue(validatePartyIds.isEmpty());
+    assertEquals(P2PCopyStatus.VALIDATION_SUCCESS, response.getCopyStatus());
+}
+
+@Test
+public void testValidateCopyRequest_SomeNullAndOverwriteActions() {
+    P2PCopyRequest copyRequest = createTestP2PCopyRequestWithNullAndOverwriteActions();
+    P2PCopyResponse response = p2PService.validateCopyRequest(copyRequest);
+
+    List<String> validatePartyIds = response.getValidationStatus();
+    assertEquals(2, validatePartyIds.size()); // Adjust according to your expected output
+    assertEquals(P2PCopyStatus.VALIDATION_SUCCESS, response.getCopyStatus());
+}
+
+@Test
+public void testValidateCopyRequest_MixedActions() {
+    P2PCopyRequest copyRequest = createTestP2PCopyRequestWithMixedActions();
+    P2PCopyResponse response = p2PService.validateCopyRequest(copyRequest);
+
+    List<String> validatePartyIds = response.getValidationStatus();
+    assertEquals(3, validatePartyIds.size()); // Adjust according to your expected output
+    assertEquals(P2PCopyStatus.VALIDATION_SUCCESS, response.getCopyStatus());
+}
+
+@Test
+public void testValidateCopyRequest_NoTargetParties() {
+    P2PCopyRequest copyRequest = createTestP2PCopyRequestWithNoTargetParties();
+    P2PCopyResponse response = p2PService.validateCopyRequest(copyRequest);
+
+    List<String> validatePartyIds = response.getValidationStatus();
+    assertTrue(validatePartyIds.isEmpty());
+    assertEquals(P2PCopyStatus.VALIDATION_SUCCESS, response.getCopyStatus());
+}
+
+// Helper methods to create test objects based on your requirements
+private P2PCopyRequest createTestP2PCopyRequestWithAllSkipActions() {
+    P2PCopyRequest request = new P2PCopyRequest();
+    request.setMainPartyId("BBBB02722214");
+    
+    List<P2PCopyTargetParty> targetParties = new ArrayList<>();
+    P2PCopyTargetParty party1 = new P2PCopyTargetParty();
+    party1.setTargetPartyId("BBBB02722214");
+    party1.setAction(P2PCopyAction.SKIP);
+    targetParties.add(party1);
+    
+    P2PCopyTargetParty party2 = new P2PCopyTargetParty();
+    party2.setTargetPartyId("BBBB02682216");
+    party2.setAction(P2PCopyAction.SKIP);
+    targetParties.add(party2);
+    
+    request.setTargetParties(targetParties);
+    
+    return request;
+}
+
+// Similarly, create other helper methods for different scenarios
+
+
+
+-------------------+-_--------
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
