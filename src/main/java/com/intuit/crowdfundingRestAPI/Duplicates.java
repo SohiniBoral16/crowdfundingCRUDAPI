@@ -1,4 +1,26 @@
 
+public class P2PService {
+
+    // ... other code ...
+
+    public P2PCopyResponse validateCopyRequest(P2PCopyRequest p2pCopyRequest) {
+        P2PCopyStatus status = p2pCopyValidationStatuses.stream()
+                .anyMatch(s -> P2PCopyStatus.DUPLICATE_RELATIONSHIP_EXISTS.equals(s.getStatus()))
+                ? P2PCopyStatus.VALIDATION_FAILURE
+                : P2PCopyStatus.VALIDATION_SUCCESS;
+
+        var p2pCopyResponse = P2PCopyResponse.builder()
+                .mainParty(p2pCopyRequest.getMainParty())
+                .copyStatus(status)
+                .message(status.getMessage().orElse("")) // Get the message if present, otherwise default to an empty string
+                .validationStatus(p2pCopyValidationStatuses)
+                .build();
+
+        return p2pCopyResponse;
+    }
+}
+
+
 package com.ms.clientData.p2pservice.model.p2p.copy;
 
 import java.util.Optional;
