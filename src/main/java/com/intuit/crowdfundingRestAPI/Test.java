@@ -1,5 +1,45 @@
 
 @Test
+public void testSourceRelationshipsMapping() {
+    // Create a test P2PCopyRequest with source relationships
+    P2PCopyRequest copyRequest = new P2PCopyRequest();
+    copyRequest.setMainPartyId("BBBB02722214");
+
+    // Setup source relationships
+    List<P2PCopyRelationship> sourceRelationships = new ArrayList<>();
+    
+    P2PCopyRelationship relationship1 = new P2PCopyRelationship();
+    relationship1.setSourcePartyId("SourceParty1");
+    relationship1.setRelationshipTypeIds(Arrays.asList("Type1", "Type2"));
+    
+    P2PCopyRelationship relationship2 = new P2PCopyRelationship();
+    relationship2.setSourcePartyId("SourceParty2");
+    relationship2.setRelationshipTypeIds(Arrays.asList("Type3", "Type4"));
+    
+    sourceRelationships.add(relationship1);
+    sourceRelationships.add(relationship2);
+    
+    copyRequest.setSourceRelationships(sourceRelationships);
+
+    // Validate the copy request
+    Map<String, List<String>> relationshipIdsBySourcePartyId = copyRequest.getSourceRelationships().stream()
+        .collect(Collectors.toMap(
+            P2PCopyRelationship::getSourcePartyId,
+            P2PCopyRelationship::getRelationshipTypeIds
+        ));
+
+    // Assertions to ensure the map has been correctly populated
+    assertNotNull(relationshipIdsBySourcePartyId);
+    assertEquals(2, relationshipIdsBySourcePartyId.size());
+    assertTrue(relationshipIdsBySourcePartyId.containsKey("SourceParty1"));
+    assertTrue(relationshipIdsBySourcePartyId.containsKey("SourceParty2"));
+    assertEquals(Arrays.asList("Type1", "Type2"), relationshipIdsBySourcePartyId.get("SourceParty1"));
+    assertEquals(Arrays.asList("Type3", "Type4"), relationshipIdsBySourcePartyId.get("SourceParty2"));
+}
+
+
+
+@Test
 public void testValidateCopyRequest_AllSkipActions() {
     P2PCopyRequest copyRequest = createTestP2PCopyRequestWithAllSkipActions();
     P2PCopyResponse response = p2PService.validateCopyRequest(copyRequest);
