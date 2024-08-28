@@ -1,4 +1,53 @@
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
+
+public class P2PServiceTest {
+
+    @Mock
+    private CodaQueryClient codaQueryClient; // Mocking the Coda Query Client
+
+    @InjectMocks
+    private P2PService p2pService; // Injecting the service under test
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testRelationshipIdsByRelatedParty() {
+        // Mocking the coda response
+        Map<String, List<String>> codaResponse = new HashMap<>();
+        codaResponse.put("BBB02682978", Arrays.asList("8021501", "8021585", "8021765", "8058647", "8058658"));
+        codaResponse.put("BBB02668742", Collections.singletonList("8021761"));
+        codaResponse.put("BBB03882887", Collections.singletonList("8021761"));
+        codaResponse.put("BBB02532943", Arrays.asList("8021501", "8058654"));
+        codaResponse.put("BBB02633914", Collections.singletonList("8058658"));
+
+        when(codaQueryClient.getPartiesByIdWithAttributes(anyList(), anyString())).thenReturn(codaResponse);
+
+        // Calling the method under test
+        TargetParty targetParty = p2pService.relationshipIdsByRelatedParty(codaResponse);
+
+        // Assertions
+        assertEquals("BBB02682978", targetParty.getTargetPartyId());
+        assertEquals(5, targetParty.getTargetPartyRelatedParties().size());
+        // You can continue to assert other expected values here
+    }
+}
+
+
+
+
 @Test
 public void testSourceRelationshipsMapping() {
     // Create a test P2PCopyRequest with source relationships
