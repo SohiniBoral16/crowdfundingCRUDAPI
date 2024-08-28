@@ -1,4 +1,41 @@
 
+private TargetParty mapToTargetParty(Party targetPartyData) {
+    // Ensure that targetPartyData and its methods return non-null values
+    var relatedPartiesMap = Optional.ofNullable(targetPartyData.getRelatedPartyList())
+        .map(Collection::stream)
+        .orElseGet(Stream::empty)
+        .collect(Collectors.toMap(
+            relatedParty -> Optional.ofNullable(relatedParty.getRoleParty())
+                .map(RoleParty::getPartyID)
+                .orElse(null), // If RoleParty or PartyID is null, return null as the key
+            relatedParty -> Optional.ofNullable(relatedParty.getPartyRelationshipType())
+                .map(types -> types.stream()
+                    .map(RelationshipType::getID)
+                    .collect(Collectors.toList())
+                )
+                .orElseGet(ArrayList::new), // If PartyRelationshipType or its stream is null, return an empty list
+            (existing, newEntry) -> {
+                Optional.ofNullable(newEntry).ifPresent(existing::addAll);
+                return existing;
+            }
+        ));
+
+    var relatedParties = relatedPartiesMap.entrySet().stream()
+        .map(entry -> TargetPartyRelatedParties.builder()
+            .relatedPartyId(entry.getKey())
+            .relationshipTypeId(entry.getValue())
+            .build()
+        )
+        .collect(Collectors.toList());
+
+    return TargetParty.builder()
+        .targetPartyId(Optional.ofNullable(targetPartyData.getPartyID()).orElse(""))
+        .targetPartyRelatedParties(relatedParties)
+        .build();
+}
+
+
+-------------------------
 public void processRelationships(Map<String, List<String>> relationIdsByRelatedPartyId, 
                                  Map<String, List<String>> sourceRelationshipsByPartyId) {
     relationIdsByRelatedPartyId.entrySet().stream()
