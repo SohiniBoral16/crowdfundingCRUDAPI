@@ -1,4 +1,51 @@
 
+@Test
+public void testMixedActionParties() throws InterruptedException, JsonProcessingException {
+    // Arrange
+    P2PCopyRequest request = createTestP2PCopyRequestWithMixedActions();
+
+    // Mock response for parties with OVERWRITE action
+    List<Party> overwriteParties = createMockPartiesForOverwriteAction();
+    
+    // Mock the codaQueryClient to return the appropriate response when called
+    when(codaQueryClient.getPartyWithAttributesPOST(anyString(), any())).thenReturn(overwriteParties);
+
+    // Act
+    P2PCopyResponse response = p2PService.copyRelations(request);
+
+    // Assert
+    // Verify that the validation process worked correctly
+    assertNotNull(response.getValidationStatus());
+    assertEquals(P2PCopyStatus.VALIDATION_SUCCESS, response.getCopyStatus());
+    // Add additional assertions depending on the expected behavior
+}
+
+private List<Party> createMockPartiesForOverwriteAction() {
+    // Create a list of Party objects that would be returned by the CodaQueryClient for OVERWRITE actions
+    List<Party> mockParties = new ArrayList<>();
+
+    Party party1 = new Party();
+    party1.setPartyID("BBB02682216");
+    party1.setRelatedPartyList(createMockRelatedPartyList());
+
+    mockParties.add(party1);
+
+    // Add more mock Party objects as needed
+
+    return mockParties;
+}
+
+private List<RelatedParty> createMockRelatedPartyList() {
+    // Create and return a list of related parties that would mimic the expected response
+    RelatedParty relatedParty = new RelatedParty();
+    relatedParty.setRole1Party(new PartyRole("role1", "partyID"));
+    relatedParty.setPartyRelationshipType(new PartyRelationshipType("relationshipTypeID"));
+
+    return Arrays.asList(relatedParty);
+}
+
+
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
