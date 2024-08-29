@@ -30,6 +30,199 @@ public class P2PServiceTest {
                 .thenReturn(Collections.emptyList());
 
         P2PCopyRequest request = createSkipActionRequest();
+        P2PCopyResponse response = p2pService.copyRequest(request);
+
+        assertTrue(response.getValidationStatuses().isEmpty(), "No validation statuses should be generated for skipped parties.");
+    }
+
+    @Test
+    void testAllPartiesOverwrite() {
+        // Mock the CodaQueryClient to return relevant data for OVERWRITE actions
+        when(codaQueryClient.getPartyWithAttributesPOST(anyList(), anyList()))
+                .thenReturn(mockOverwritePartyData());
+
+        P2PCopyRequest request = createOverwriteActionRequest();
+        P2PCopyResponse response = p2pService.copyRequest(request);
+
+        assertFalse(response.getValidationStatuses().isEmpty(), "Validation statuses should be generated for overwrite parties.");
+        assertEquals(P2PCopyStatus.VALIDATION_SUCCESS, response.getCopyStatus());
+    }
+
+    @Test
+    void testMixedActions() {
+        // Mock the CodaQueryClient to return relevant data for mixed actions
+        when(codaQueryClient.getPartyWithAttributesPOST(anyList(), anyList()))
+                .thenReturn(mockMixedActionPartyData());
+
+        P2PCopyRequest request = createMixedActionRequest();
+        P2PCopyResponse response = p2pService.copyRequest(request);
+
+        assertFalse(response.getValidationStatuses().isEmpty(), "Validation statuses should be generated for valid parties.");
+        assertTrue(response.getValidationStatuses().stream().anyMatch(status -> status.getStatus() == P2PCopyStatus.VALIDATION_FAILURE), "There should be validation failures for duplicate relationships.");
+        assertTrue(response.getValidationStatuses().stream().anyMatch(status -> status.getStatus() == P2PCopyStatus.VALIDATION_SUCCESS), "There should be validation successes.");
+    }
+
+    @Test
+    void testPartiesWithDuplicateRelationships() {
+        // Mock the CodaQueryClient to return duplicate relationship data
+        when(codaQueryClient.getPartyWithAttributesPOST(anyList(), anyList()))
+                .thenReturn(mockDuplicateRelationshipPartyData());
+
+        P2PCopyRequest request = createDuplicateRelationshipRequest();
+        P2PCopyResponse response = p2pService.copyRequest(request);
+
+        assertFalse(response.getValidationStatuses().isEmpty(), "Validation statuses should be generated for parties with duplicates.");
+        assertEquals(P2PCopyStatus.DUPLICATE_RELATIONSHIP_EXISTS, response.getCopyStatus());
+    }
+
+    @Test
+    void testPartiesWithNoDuplicateRelationships() {
+        // Mock the CodaQueryClient to return data with no duplicate relationships
+        when(codaQueryClient.getPartyWithAttributesPOST(anyList(), anyList()))
+                .thenReturn(mockNoDuplicateRelationshipPartyData());
+
+        P2PCopyRequest request = createNoDuplicateRelationshipRequest();
+        P2PCopyResponse response = p2pService.copyRequest(request);
+
+        assertFalse(response.getValidationStatuses().isEmpty(), "Validation statuses should be generated for valid parties.");
+        assertEquals(P2PCopyStatus.VALIDATION_SUCCESS, response.getCopyStatus());
+    }
+
+    // Helper Methods for Test Data
+
+    private P2PCopyRequest createSkipActionRequest() {
+        P2PCopyRequest request = new P2PCopyRequest();
+        request.setMainPartyId("BBB02722214");
+
+        P2PCopyTargetParty party = new P2PCopyTargetParty();
+        party.setTargetPartyId("BBB02722214");
+        party.setAction(P2PCopyAction.SKIP);
+
+        request.setTargetParties(Arrays.asList(party));
+        return request;
+    }
+
+    private P2PCopyRequest createOverwriteActionRequest() {
+        P2PCopyRequest request = new P2PCopyRequest();
+        request.setMainPartyId("BBB02722214");
+
+        P2PCopyTargetParty party = new P2PCopyTargetParty();
+        party.setTargetPartyId("BBB02682216");
+        party.setAction(P2PCopyAction.OVERWRITE);
+
+        request.setTargetParties(Arrays.asList(party));
+        return request;
+    }
+
+    private P2PCopyRequest createMixedActionRequest() {
+        P2PCopyRequest request = new P2PCopyRequest();
+        request.setMainPartyId("BBB02722214");
+
+        P2PCopyTargetParty party1 = new P2PCopyTargetParty();
+        party1.setTargetPartyId("BBB02682216");
+        party1.setAction(P2PCopyAction.OVERWRITE);
+
+        P2PCopyTargetParty party2 = new P2PCopyTargetParty();
+        party2.setTargetPartyId("BBB02682217");
+        party2.setAction(P2PCopyAction.SKIP_VALIDATION);
+
+        P2PCopyTargetParty party3 = new P2PCopyTargetParty();
+        party3.setTargetPartyId("BBB02682218");
+        party3.setAction(null);
+
+        request.setTargetParties(Arrays.asList(party1, party2, party3));
+        return request;
+    }
+
+    private P2PCopyRequest createDuplicateRelationshipRequest() {
+        P2PCopyRequest request = new P2PCopyRequest();
+        request.setMainPartyId("BBB02722214");
+
+        P2PCopyTargetParty party = new P2PCopyTargetParty();
+        party.setTargetPartyId("BBB02682278");
+        party.setAction(P2PCopyAction.OVERWRITE);
+
+        request.setTargetParties(Arrays.asList(party));
+        return request;
+    }
+
+    private P2PCopyRequest createNoDuplicateRelationshipRequest() {
+        P2PCopyRequest request = new P2PCopyRequest();
+        request.setMainPartyId("BBB02722214");
+
+        P2PCopyTargetParty party = new P2PCopyTargetParty();
+        party.setTargetPartyId("BBB02682216");
+        party.setAction(P2PCopyAction.OVERWRITE);
+
+        request.setTargetParties(Arrays.asList(party));
+        return request;
+    }
+
+    // Mock Data for CodaQueryClient
+
+    private List<PartyData> mockSkipActionParties() {
+        // Return a list of PartyData objects that should be skipped
+        return Collections.emptyList();
+    }
+
+    private List<PartyData> mockOverwritePartyData() {
+        // Return a list of PartyData objects that have overwrite action
+        return Arrays.asList(new PartyData("BBB02682216", "ROLE_1"));
+    }
+
+    private List<PartyData> mockMixedActionPartyData() {
+        // Return a list of PartyData objects with mixed actions
+        return Arrays.asList(
+                new PartyData("BBB02682216", "ROLE_1"),
+                new PartyData("BBB02682217", "ROLE_2"),
+                new PartyData("BBB02682218", "ROLE_3")
+        );
+    }
+
+    private List<PartyData> mockDuplicateRelationshipPartyData() {
+        // Return a list of PartyData objects that have duplicate relationships
+        return Arrays.asList(new PartyData("BBB02682278", "ROLE_1"));
+    }
+
+    private List<PartyData> mockNoDuplicateRelationshipPartyData() {
+        // Return a list of PartyData objects with no duplicate relationships
+        return Arrays.asList(new PartyData("BBB02682216", "ROLE_1"));
+    }
+}
+
+
+----------------------------------
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+public class P2PServiceTest {
+
+    @InjectMocks
+    private P2PService p2pService;
+
+    @Mock
+    private CodaQueryClient codaQueryClient;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testAllPartiesSkip() {
+        // Mock the CodaQueryClient to return empty data as they should be skipped
+        when(codaQueryClient.getPartyWithAttributesPOST(anyList(), anyList()))
+                .thenReturn(Collections.emptyList());
+
+        P2PCopyRequest request = createSkipActionRequest();
         P2PCopyResponse response = p2pService.validateCopyRequest(request);
 
         assertTrue(response.getValidationStatuses().isEmpty(), "No validation statuses should be generated for skipped parties.");
