@@ -1,4 +1,78 @@
 
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class P2PServiceTest {
+
+    @InjectMocks
+    private P2PService p2pService;
+
+    @Mock
+    private CodaQueryClient codaQueryClient;
+
+    @Mock
+    private P2P00MTransformer p2p00MTransformer;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testAllPartiesSkip() {
+        // Mock the CodaQueryClient to return a list of parties with SKIP actions
+        when(codaQueryClient.getPartyWithAttributesPOST(any(), any()))
+            .thenReturn(mockSkipActionParties());
+
+        // Call the method and assert results
+        P2PCopyResponse response = p2pService.validateCopyRequest(createSkipActionRequest());
+
+        // Assert that no parties were validated
+        assertTrue(response.getValidationStatuses().isEmpty());
+    }
+
+    @Test
+    void testAllPartiesOverwrite() {
+        // Mock the CodaQueryClient to return a list of parties with OVERWRITE actions
+        when(codaQueryClient.getPartyWithAttributesPOST(any(), any()))
+            .thenReturn(mockOverwriteActionParties());
+
+        // Call the method and assert results
+        P2PCopyResponse response = p2pService.validateCopyRequest(createOverwriteActionRequest());
+
+        // Assert that the validation was successful and statuses are as expected
+        assertFalse(response.getValidationStatuses().isEmpty());
+        assertEquals(P2PCopyStatus.VALIDATION_SUCCESS, response.getCopyStatus());
+    }
+
+    // Repeat for other scenarios...
+
+    private P2PCopyRequest createSkipActionRequest() {
+        // Create a request where all parties have SKIP action
+        // Implement this method based on your request format
+    }
+
+    private P2PCopyRequest createOverwriteActionRequest() {
+        // Create a request where all parties have OVERWRITE action
+        // Implement this method based on your request format
+    }
+
+    // Mock data helpers
+    private List<PartyData> mockSkipActionParties() {
+        // Mock your party data with SKIP actions
+    }
+
+    private List<PartyData> mockOverwriteActionParties() {
+        // Mock your party data with OVERWRITE actions
+    }
+}
+
+
+
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
