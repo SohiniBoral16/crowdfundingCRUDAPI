@@ -1,3 +1,32 @@
+
+
+Feature: P2P Copy Functionality
+
+  As a user
+  I want to test the P2P copy functionality for parties with null action codes
+  So that I can ensure the feature works correctly when all parties are new and have no action code
+
+  Background:
+    Given the main party ID "BBB02722214"
+
+  Scenario: All target parties have null action codes (first-time copy)
+    Given the following target parties with actions:
+      | targetPartyId  | action |
+      | BBB02722214    | null   |
+      | BBB02682216    | null   |
+      | BBB02682978    | null   |
+    And the following source relationships:
+      | sourcePartyId  | RelationshipTypeIds         |
+      | BBB02532943    | 8021501, 8021761            |
+    When I execute the P2P copy functionality
+    Then the validation status should be "VALIDATION_SUCCESS"
+    And the copy status should be "COPY_SUCCESS"
+    And all the target parties should be validated and copied successfully
+
+
+
+
+
 Feature: P2P Copy Functionality
 
   As a user
