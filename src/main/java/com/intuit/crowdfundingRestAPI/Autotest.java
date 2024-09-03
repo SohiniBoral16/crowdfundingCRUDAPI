@@ -1,4 +1,47 @@
+Feature: Copy relations between parties
+  As a user,
+  I want to validate and copy relationships between target parties.
 
+  Background:
+    Given the following target parties exist:
+      | targetPartyId  | actionCode |
+      | BBB02722214    | null       |
+      | BBB02682216    | null       |
+      | BBB02682978    | null       |
+    And the following source relationships exist:
+      | sourcePartyId  | relationshipTypeIds     |
+      | BBB02532943    | 8021501, 8021761        |
+      | BBB02631843    | 8058647                 |
+
+  Scenario: Validate all target parties are ready to copy
+    When I send a copy relations request
+    Then the response should contain:
+      | copyStatus           | VALIDATION_SUCCESS |
+      | message              | All target parties are ready to copy |
+      | mainPartyId          | BBB02722214        |
+      | validationStatus     | targetPartyId | status        | copyFailedRelationships | copySuccessRelationships                                                             |
+      |                      | BBB02722214   | READY_TO_COPY | []                     | [{"sourcePartyId":"BBB02631843","relationshipTypeIds":["8058647"]},                 |
+      |                      |               |               |                        | {"sourcePartyId":"BBB02532943","relationshipTypeIds":["8021501","8021761"]}]       |
+      |                      | BBB02682216   | READY_TO_COPY | []                     | [{"sourcePartyId":"BBB02631843","relationshipTypeIds":["8058647"]},                 |
+      |                      |               |               |                        | {"sourcePartyId":"BBB02532943","relationshipTypeIds":["8021501","8021761"]}]       |
+      |                      | BBB02682978   | READY_TO_COPY | []                     | [{"sourcePartyId":"BBB02631843","relationshipTypeIds":["8058647"]},                 |
+      |                      |               |               |                        | {"sourcePartyId":"BBB02532943","relationshipTypeIds":["8021501","8021761"]}]       |
+
+  Scenario: Validation fails due to duplicate relationships
+    Given the target party "BBB02682978" has existing relationships:
+      | sourcePartyId  | relationshipTypeIds     |
+      | BBB02532943    | 8021501                 |
+    When I send a copy relations request
+    Then the response should contain:
+      | copyStatus           | VALIDATION_FAILURE |
+      | message              | Duplicate Relationships exist within the selected Parties |
+      | mainPartyId          | BBB02722214        |
+      | validationStatus     | targetPartyId | status                        | copyFailedRelationships                            | copySuccessRelationships                                  |
+      |                      | BBB02722214   | READY_TO_COPY                | []                                                | [{"sourcePartyId":"BBB02631843","relationshipTypeIds":["8058647"]},       |
+      |                      |               |                               |                                                  | {"sourcePartyId":"BBB02532943","relationshipTypeIds":["8021501","8021761"]}]  |
+      |                      | BBB02682216   | READY_TO_COPY                | []                                                | [{"sourcePartyId":"BBB02631843","relationshipTypeIds":["8058647"]},       |
+      |                      |               |                               |                                                  | {"sourcePartyId":"BBB02532943","relationshipTypeIds":["8021501","8021761"]}]  |
+      |                      | BBB02682978   | DUPLICATE_RELATIONSHIP_EXISTS | [{"sourcePartyId":"BBB02532943","relationshipTypeIds":["8021501"]}]  | [{"sourcePartyId":"BBB02631843","relationshipTypeIds":["8058647"]}]       |
 
 
 Feature: Copy relations between parties
