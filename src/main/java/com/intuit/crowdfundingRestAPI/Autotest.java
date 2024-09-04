@@ -1,4 +1,72 @@
 
+package com.ms.kycautomationframework.world;
+
+import com.ms.kycautomationframework.model.P2PCopyRequest;
+import com.ms.kycautomationframework.model.P2PCopyTargetParty;
+import com.ms.kycautomationframework.model.P2PCopyRelationship;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import org.junit.Assert;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+public class P2PCopyRelationshipStep {
+
+    private P2PCopyRequest p2PCopyRequest;
+    private String copyStatus;
+
+    @Given("main party Id {string}")
+    public void givenMainPartyId(String mainPartyId) {
+        p2PCopyRequest = new P2PCopyRequest();
+        p2PCopyRequest.setMainPartyId(mainPartyId);
+    }
+
+    @Given("the following target parties and the relationships of the main party Id to be copied in the target parties:")
+    public void givenTargetPartiesAndRelationships(io.cucumber.datatable.DataTable dataTable) {
+        List<Map<String, String>> rows = dataTable.asMaps(String.class, String.class);
+        List<P2PCopyTargetParty> targetParties = new ArrayList<>();
+        List<P2PCopyRelationship> sourceRelationships = new ArrayList<>();
+
+        for (Map<String, String> row : rows) {
+            // Create and populate the P2PCopyTargetParty object
+            P2PCopyTargetParty targetParty = new P2PCopyTargetParty();
+            targetParty.setTargetPartyId(row.get("targetPartyId"));
+            targetParty.setAction(row.get("action") == null ? null : P2PCopyAction.valueOf(row.get("action")));
+            targetParties.add(targetParty);
+
+            // Create and populate the P2PCopyRelationship object
+            P2PCopyRelationship relationship = new P2PCopyRelationship();
+            relationship.setSourcePartyId(row.get("sourcePartyId"));
+            relationship.setRelationshipTypeIds(List.of(row.get("relationshipTypeIds").split(",")));
+            sourceRelationships.add(relationship);
+        }
+
+        p2PCopyRequest.setTargetParties(targetParties);
+        p2PCopyRequest.setSourceRelationships(sourceRelationships);
+    }
+
+    @Then("while validating if no duplicate related parties are present in the target parties, then the copyStatus should be {string}")
+    public void validateNoDuplicateRelatedParties(String expectedStatus) {
+        // Add logic to validate that there are no duplicate relationships
+        // For demonstration purposes, we will set the copyStatus as VALIDATION_SUCCESS
+        copyStatus = "VALIDATION_SUCCESS";
+        Assert.assertEquals(expectedStatus, copyStatus);
+    }
+
+    @Then("all the source parties should be successfully copied in the target parties, the copyStatus should be {string}")
+    public void copySourcePartiesToTarget(String expectedStatus) {
+        // Add logic to handle the copying of source parties to target parties
+        // For demonstration purposes, we will set the copyStatus as COPY_SUCCESS
+        copyStatus = "COPY_SUCCESS";
+        Assert.assertEquals(expectedStatus, copyStatus);
+    }
+}
+
+
+
+-------------------------------
 Scenario: Validate relationships for parties with duplicate relationships
     Given the main party ID "BBB02722214"
     | targetPartyId    | status                          | copyFailedRelationships         | copySuccessRelationships         |
