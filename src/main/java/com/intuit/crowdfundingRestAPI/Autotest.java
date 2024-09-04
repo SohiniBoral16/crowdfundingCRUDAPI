@@ -1,6 +1,99 @@
 
 package com.ms.kycautomationframework.world;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ms.kycautomationframework.model.P2PCopyRequest;
+import com.ms.kycautomationframework.model.P2PCopyRelationship;
+import com.ms.kycautomationframework.model.P2PCopyTargetParty;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.json.JSONObject;
+import org.junit.Assert;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+public class P2PCopyRelationshipStep {
+
+    @Value("${copyRelationshipsURI}")
+    private String copyRelationshipsURI;
+
+    private P2PCopyRequest p2PCopyRequest;
+    private ResponseEntity<String> response;
+
+    @Given("main party Id {string}")
+    public void givenMainPartyId(String mainPartyId) {
+        p2PCopyRequest = new P2PCopyRequest();
+        p2PCopyRequest.setMainPartyId(mainPartyId);
+    }
+
+    @Given("the following target parties and the relationships of main party id to be copied in the target parties:")
+    public void givenTargetPartiesCopyRelationships(io.cucumber.datatable.DataTable dataTable) {
+        List<Map<String, String>> rows = dataTable.asMaps(String.class, String.class);
+        List<P2PCopyTargetParty> targetParties = new ArrayList<>();
+        List<P2PCopyRelationship> sourceRelationships = new ArrayList<>();
+
+        for (Map<String, String> row : rows) {
+            // Create P2PCopyTargetParty object
+            P2PCopyTargetParty targetParty = new P2PCopyTargetParty();
+            targetParty.setTargetPartyId(row.get("targetPartyId"));
+            if (row.get("action") != null && !row.get("action").isEmpty()) {
+                targetParty.setAction(P2PCopyAction.valueOf(row.get("action")));
+            }
+            targetParties.add(targetParty);
+
+            // Create P2PCopyRelationship object
+            P2PCopyRelationship relationship = new P2PCopyRelationship();
+            relationship.setSourcePartyId(row.get("sourcePartyId"));
+            relationship.setRelationshipTypeIds(List.of(row.get("relationshipTypeIds").split(",")));
+            sourceRelationships.add(relationship);
+        }
+
+        p2PCopyRequest.setTargetParties(targetParties);
+        p2PCopyRequest.setSourceRelationships(sourceRelationships);
+    }
+
+    @When("I send the copy request")
+    public void sendCopyRequest() throws IOException {
+        // Convert P2PCopyRequest to JSON
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonPayload = objectMapper.writeValueAsString(p2PCopyRequest);
+
+        // Make POST request
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<String> entity = new HttpEntity<>(jsonPayload, headers);
+        response = restTemplate.exchange(copyRelationshipsURI, HttpMethod.POST, entity, String.class);
+    }
+
+    @Then("the copyStatus should be {string}")
+    public void verifyCopyStatus(String expectedStatus) {
+        Assert.assertEquals(HttpStatus.OK, response.getStatusCode());
+        JSONObject jsonResponse = new JSONObject(response.getBody());
+        String actualStatus = jsonResponse.getString("copyStatus");
+        Assert.assertEquals(expectedStatus, actualStatus);
+    }
+
+    @Then("the response should contain the message {string}")
+    public void verifyResponseMessage(String expectedMessage) {
+        JSONObject jsonResponse = new JSONObject(response.getBody());
+        String actualMessage = jsonResponse.getString("message");
+        Assert.assertEquals(expectedMessage, actualMessage);
+    }
+}
+
+
+--------+-------------------
+package com.ms.kycautomationframework.world;
+
 import com.ms.kycautomationframework.model.P2PCopyRequest;
 import com.ms.kycautomationframework.model.P2PCopyTargetParty;
 import com.ms.kycautomationframework.model.P2PCopyRelationship;
