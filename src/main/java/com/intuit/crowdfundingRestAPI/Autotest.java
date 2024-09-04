@@ -1,4 +1,65 @@
 
+@When("I prepare the copy relationships JSON payload")
+public void prepareCopyRelationshipsJSON() {
+    // Load the template JSON from the file
+    p2pCopyRelationshipJSON = new JSONObject(KerberosClient.filterJson(requestsFolder, "copyRelationships.json").toString());
+
+    // Replace the placeholders with actual values
+    p2pCopyRelationshipJSON.put("mainPartyId", p2PCopyRequest.getMainPartyId());
+
+    // Loop over target parties and replace the values dynamically
+    for (int i = 0; i < p2PCopyRequest.getTargetParties().size(); i++) {
+        P2PCopyTargetParty targetParty = p2PCopyRequest.getTargetParties().get(i);
+        JSONObject targetPartyJSON = p2pCopyRelationshipJSON.getJSONArray("targetParties").getJSONObject(i);
+        targetPartyJSON.put("targetPartyId", targetParty.getTargetPartyId());
+        targetPartyJSON.put("action", targetParty.getAction() != null ? targetParty.getAction().toString() : null);
+    }
+
+    // Loop over source relationships and replace the values dynamically
+    for (int i = 0; i < p2PCopyRequest.getSourceRelationships().size(); i++) {
+        P2PCopyRelationship relationship = p2PCopyRequest.getSourceRelationships().get(i);
+        JSONObject relationshipJSON = p2pCopyRelationshipJSON.getJSONArray("sourceRelationships").getJSONObject(i);
+        relationshipJSON.put("sourcePartyId", relationship.getSourcePartyId());
+        relationshipJSON.put("relationshipTypeIds", relationship.getRelationshipTypeIds());
+    }
+
+    // Convert the final JSON object back to string format for the API call
+    p2pCopyRequestJSON = p2pCopyRelationshipJSON.toString();
+}
+
+
+
+{
+  "mainPartyId": "{mainPartyId}",
+  "targetParties": [
+    {
+      "targetPartyId": "{targetPartyId_1}",
+      "action": "{action_1}"
+    },
+    {
+      "targetPartyId": "{targetPartyId_2}",
+      "action": "{action_2}"
+    }
+  ],
+  "sourceRelationships": [
+    {
+      "sourcePartyId": "{sourcePartyId_1}",
+      "relationshipTypeIds": [
+        "{relationshipTypeId_1}",
+        "{relationshipTypeId_2}"
+      ]
+    },
+    {
+      "sourcePartyId": "{sourcePartyId_2}",
+      "relationshipTypeIds": [
+        "{relationshipTypeId_3}"
+      ]
+    }
+  ]
+}
+
+
+----------------------
 package com.ms.kycautomationframework.world;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
