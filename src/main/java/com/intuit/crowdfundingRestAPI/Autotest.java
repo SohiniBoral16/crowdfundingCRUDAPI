@@ -1,4 +1,147 @@
 
+@Then("the functionality will be skipped completely, the copy status should be {string}")
+public void validateSkipAllParties(String expectedCopyStatus) throws Exception {
+    String actualResponseBody = httpResponse.getBody();
+    
+    // Log the actual response for debugging
+    System.out.println("Actual Response Body: " + actualResponseBody);
+    
+    // Parse the actual JSON response
+    JSONObject jsonResponse = new JSONObject(actualResponseBody);
+    
+    // Extract actual values from the response
+    String actualCopyStatus = jsonResponse.getString("copyStatus");
+    String actualMessage = jsonResponse.getString("message");
+
+    // Perform assertions for copyStatus
+    Assert.assertEquals("Copy status does not match!", expectedCopyStatus, actualCopyStatus);
+
+    // Check if the response message is also as expected
+    Assert.assertEquals("Operation updateParty executed successfully", actualMessage);
+}
+
+@Given("the following target parties with SKIP action and source relationships to be copied in the target parties:")
+public void givenSkipTargetParties(io.cucumber.datatable.DataTable dataTable) {
+    // Extract rows from the DataTable
+    List<Map<String, String>> rows = dataTable.asMaps(String.class, String.class);
+    List<P2PCopyTargetParty> targetParties = new ArrayList<>();
+    List<P2PCopyRelationship> sourceRelationships = new ArrayList<>();
+
+    for (Map<String, String> row : rows) {
+        // Create P2PCopyTargetParty object
+        P2PCopyTargetParty targetParty = new P2PCopyTargetParty();
+        targetParty.setTargetPartyId(row.get("targetPartyId"));
+        targetParty.setAction(P2PCopyAction.SKIP);  // Setting the action to SKIP
+        targetParties.add(targetParty);
+
+        // Create P2PCopyRelationship object
+        P2PCopyRelationship relationship = new P2PCopyRelationship();
+        relationship.setSourcePartyId(row.get("sourcePartyId"));
+        relationship.setRelationshipTypeIds(List.of(row.get("relationshipTypeIds").split(",")));
+        sourceRelationships.add(relationship);
+    }
+
+    p2PCopyRequest.setTargetParties(targetParties);
+    p2PCopyRequest.setSourceRelationships(sourceRelationships);
+
+    try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        p2pCopyRequestJSON = objectMapper.writeValueAsString(p2PCopyRequest);  // Convert the request to JSON
+        p2pCopyRelationshipJSON = new JSONObject(p2pCopyRequestJSON);  // Create JSONObject
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
+---------------------------------------
+@Given("the following target parties with OVERWRITE action and source relationships to be copied in the target parties:")
+public void givenOverwriteTargetParties(io.cucumber.datatable.DataTable dataTable) {
+    // Extract rows from the DataTable
+    List<Map<String, String>> rows = dataTable.asMaps(String.class, String.class);
+    List<P2PCopyTargetParty> targetParties = new ArrayList<>();
+    List<P2PCopyRelationship> sourceRelationships = new ArrayList<>();
+
+    for (Map<String, String> row : rows) {
+        // Create P2PCopyTargetParty object
+        P2PCopyTargetParty targetParty = new P2PCopyTargetParty();
+        targetParty.setTargetPartyId(row.get("targetPartyId"));
+        targetParty.setAction(P2PCopyAction.OVERWRITE);
+        targetParties.add(targetParty);
+
+        // Create P2PCopyRelationship object
+        P2PCopyRelationship relationship = new P2PCopyRelationship();
+        relationship.setSourcePartyId(row.get("sourcePartyId"));
+        relationship.setRelationshipTypeIds(List.of(row.get("relationshipTypeIds").split(",")));
+        sourceRelationships.add(relationship);
+    }
+
+    p2PCopyRequest.setTargetParties(targetParties);
+    p2PCopyRequest.setSourceRelationships(sourceRelationships);
+
+    try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        p2pCopyRequestJSON = objectMapper.writeValueAsString(p2PCopyRequest);  // Convert the request to JSON
+        p2pCopyRelationshipJSON = new JSONObject(p2pCopyRequestJSON);  // Create JSONObject
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
+
+@Then("the following validation and copy status should be returned for OVERWRITE action:")
+public void validateOverwriteAction(io.cucumber.datatable.DataTable dataTable) throws Exception {
+    // Extract expected values from the data table
+    List<Map<String, String>> expectedResponse = dataTable.asMaps(String.class, String.class);
+    String actualResponseBody = httpResponse.getBody();
+    
+    // Log the actual response for debugging
+    System.out.println("Actual Response Body: " + actualResponseBody);
+    
+    // Parse the actual JSON response
+    JSONObject jsonResponse = new JSONObject(actualResponseBody);
+    
+    // Extract actual values from the response
+    String actualCopyStatus = jsonResponse.getString("copyStatus");
+    String actualMessage = jsonResponse.getString("message");
+
+    // Check if validationStatus array is present
+    JSONArray validationStatuses = jsonResponse.getJSONArray("validationStatus");
+    Assert.assertTrue("Validation statuses should not be empty", validationStatuses.length() > 0);
+
+    // Loop through the validation statuses and check each one
+    for (int i = 0; i < validationStatuses.length(); i++) {
+        JSONObject validationStatus = validationStatuses.getJSONObject(i);
+
+        String actualTargetPartyId = validationStatus.getString("targetPartyId");
+        String actualStatus = validationStatus.getString("status");
+
+        // Assert that the status is SKIPPED_VALIDATION
+        Assert.assertEquals("Status does not match for target party!", "SKIPPED_VALIDATION", actualStatus);
+
+        // Check that copyFailedRelationships and copySuccessRelationships arrays exist and have appropriate values
+        JSONArray copySuccessRelationships = validationStatus.getJSONArray("copySuccessRelationships");
+        Assert.assertTrue("copySuccessRelationships should not be empty", copySuccessRelationships.length() > 0);
+
+        for (int j = 0; j < copySuccessRelationships.length(); j++) {
+            JSONObject successRelationship = copySuccessRelationships.getJSONObject(j);
+            Assert.assertNotNull("sourcePartyId should not be null", successRelationship.getString("sourcePartyId"));
+            Assert.assertNotNull("relationshipTypeIds should not be null", successRelationship.getJSONArray("relationshipTypeIds"));
+        }
+    }
+
+    // Compare actual values with expected values from the DataTable
+    for (Map<String, String> row : expectedResponse) {
+        String expectedCopyStatus = row.get("copyStatus");
+        String expectedMessage = row.get("message");
+
+        // Perform assertions for copyStatus and message
+        Assert.assertEquals("Copy status does not match!", expectedCopyStatus, actualCopyStatus);
+        Assert.assertEquals("Response message does not match!", expectedMessage, actualMessage);
+    }
+}
+
+
+-----------------------------------------
 @Then("the validation should return duplicate relationship exists with details:")
 public void verifyDuplicateRelationships(io.cucumber.datatable.DataTable dataTable) {
     // Extract expected values from the data table
