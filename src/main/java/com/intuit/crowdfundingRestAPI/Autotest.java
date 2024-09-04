@@ -1,4 +1,61 @@
 
+@Then("the validation should return duplicate relationship exists with details:")
+public void verifyDuplicateRelationships(io.cucumber.datatable.DataTable dataTable) {
+    // Extract expected values from the data table
+    List<Map<String, String>> expectedResponse = dataTable.asMaps(String.class, String.class);
+    String actualResponseBody = httpResponse.getBody();
+    
+    // Log the actual response for debugging
+    System.out.println("Actual Response Body: " + actualResponseBody);
+    
+    // Parse the actual JSON response
+    JSONObject jsonResponse = new JSONObject(actualResponseBody);
+    
+    // Extract actual values from the response
+    String actualCopyStatus = jsonResponse.getString("copyStatus");
+    String actualMessage = jsonResponse.getString("message");
+
+    // Check if validationStatus array is present
+    JSONArray validationStatuses = jsonResponse.getJSONArray("validationStatus");
+    Assert.assertTrue("Validation statuses should not be empty", validationStatuses.length() > 0);
+
+    // Loop through the validation statuses and check each one
+    for (int i = 0; i < validationStatuses.length(); i++) {
+        JSONObject validationStatus = validationStatuses.getJSONObject(i);
+
+        String actualTargetPartyId = validationStatus.getString("targetPartyId");
+        String actualStatus = validationStatus.getString("status");
+
+        // Assert that the status is DUPLICATE_RELATIONSHIP_EXISTS
+        Assert.assertEquals("Status does not match for target party!", "DUPLICATE_RELATIONSHIP_EXISTS", actualStatus);
+
+        // Check that copyFailedRelationships is not empty
+        JSONArray copyFailedRelationships = validationStatus.getJSONArray("copyFailedRelationships");
+        Assert.assertTrue("copyFailedRelationships should not be empty", copyFailedRelationships.length() > 0);
+
+        // Loop through the copyFailedRelationships and validate them
+        for (int j = 0; j < copyFailedRelationships.length(); j++) {
+            JSONObject failedRelationship = copyFailedRelationships.getJSONObject(j);
+            Assert.assertNotNull("sourcePartyId should not be null", failedRelationship.getString("sourcePartyId"));
+            Assert.assertNotNull("relationshipTypeIds should not be null", failedRelationship.getJSONArray("relationshipTypeIds"));
+        }
+    }
+
+    // Compare actual values with expected values from the DataTable
+    for (Map<String, String> row : expectedResponse) {
+        String expectedCopyStatus = row.get("copyStatus");
+        String expectedMessage = row.get("message");
+
+        // Perform assertions for copyStatus and message
+        Assert.assertEquals("Copy status does not match!", expectedCopyStatus, actualCopyStatus);
+        Assert.assertEquals("Response message does not match!", expectedMessage, actualMessage);
+    }
+}
+
+
+
+
+--------------------------
 @Then("the following response should be returned:")
 public void verifyResponse(io.cucumber.datatable.DataTable dataTable) {
     List<Map<String, String>> expectedResponse = dataTable.asMaps(String.class, String.class);
