@@ -1,3 +1,15 @@
+
+Scenario: Validate relationships for parties with duplicate relationships
+    Given the main party ID "BBB02722214"
+    | targetPartyId    | status                          | copyFailedRelationships         | copySuccessRelationships         |
+    | "BBB02682978"    | "DUPLICATE_RELATIONSHIP_EXISTS"  | [sourcePartyId: "BBB02532943", relationshipTypeIds: [8021501]]  | []  |
+    | "BBB02682216"    | "READY_TO_COPY"                 | []                            | [sourcePartyId: "BBB02532943", relationshipTypeIds: [8021761, 8021501]], [sourcePartyId: "BBB02631843", relationshipTypeIds: [8058647]]  |
+
+When the user executes the P2P copy functionality
+Then the copyStatus should be "VALIDATION_FAILURE"
+And the message should be "Duplicate Relationships exists within the selected Parties"
+
+
 Feature: Copy relations between parties
   As a user,
   I want to validate and copy relationships between target parties.
