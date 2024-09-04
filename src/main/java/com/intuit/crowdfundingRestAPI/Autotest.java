@@ -1,4 +1,25 @@
 
+@Then("the following response should be returned:")
+public void verifyResponse(io.cucumber.datatable.DataTable dataTable) {
+    List<Map<String, String>> expectedResponse = dataTable.asMaps(String.class, String.class);
+    
+    // Extract the actual response from the API
+    JSONObject jsonResponse = new JSONObject(httpResponse.getBody());
+    String actualCopyStatus = jsonResponse.getString("copyStatus");
+    String actualMessage = jsonResponse.getString("message");
+
+    // Extract expected values from the data table
+    for (Map<String, String> row : expectedResponse) {
+        String expectedCopyStatus = row.get("copyStatus");
+        String expectedMessage = row.get("message");
+
+        // Perform the assertion checks
+        Assert.assertEquals("Copy status does not match!", expectedCopyStatus, actualCopyStatus);
+        Assert.assertEquals("Response message does not match!", expectedMessage, actualMessage);
+    }
+}
+
+
 
 package com.ms.kycautomationframework.world;
 
