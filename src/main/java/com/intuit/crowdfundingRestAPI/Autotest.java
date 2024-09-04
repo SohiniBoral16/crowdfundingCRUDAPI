@@ -1,4 +1,122 @@
 
+
+package com.ms.kycautomationframework.world;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ms.kycautomationframework.model.P2PCopyRequest;
+import com.ms.kycautomationframework.model.P2PCopyRelationship;
+import com.ms.kycautomationframework.model.P2PCopyTargetParty;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.json.JSONObject;
+import org.junit.Assert;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+public class P2PCopyRelationshipStep {
+
+    @Value("${copyRelationshipsURI}")
+    private String copyRelationshipsURI;
+
+    @Value("${requestsFolder}")
+    private String requestsFolder;
+
+    private P2PCopyRequest p2PCopyRequest;
+    private JSONObject p2pCopyRelationshipJSON;  // Declaring the JSON object
+    private String p2pCopyRequestJSON;  // Declaring the final JSON string
+    private ResponseEntity<String> httpResponse;
+
+    // Declare the given step to set the main party ID
+    @Given("main party Id {string}")
+    public void givenMainPartyId(String mainPartyId) {
+        p2PCopyRequest = new P2PCopyRequest();
+        p2PCopyRequest.setMainPartyId(mainPartyId);
+    }
+
+    // Given step for populating target parties and relationships from the feature file
+    @Given("the following target parties and the relationships of main party id to be copied in the target parties:")
+    public void givenTargetPartiesCopyRelationships(io.cucumber.datatable.DataTable dataTable) {
+        List<Map<String, String>> rows = dataTable.asMaps(String.class, String.class);
+        List<P2PCopyTargetParty> targetParties = new ArrayList<>();
+        List<P2PCopyRelationship> sourceRelationships = new ArrayList<>();
+
+        for (Map<String, String> row : rows) {
+            // Create P2PCopyTargetParty object
+            P2PCopyTargetParty targetParty = new P2PCopyTargetParty();
+            targetParty.setTargetPartyId(row.get("targetPartyId"));
+            if (row.get("action") != null && !row.get("action").isEmpty()) {
+                targetParty.setAction(P2PCopyAction.valueOf(row.get("action")));
+            }
+            targetParties.add(targetParty);
+
+            // Create P2PCopyRelationship object
+            P2PCopyRelationship relationship = new P2PCopyRelationship();
+            relationship.setSourcePartyId(row.get("sourcePartyId"));
+            relationship.setRelationshipTypeIds(List.of(row.get("relationshipTypeIds").split(",")));
+            sourceRelationships.add(relationship);
+        }
+
+        p2PCopyRequest.setTargetParties(targetParties);
+        p2PCopyRequest.setSourceRelationships(sourceRelationships);
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            p2pCopyRequestJSON = objectMapper.writeValueAsString(p2PCopyRequest);  // Converting to JSON string
+            p2pCopyRelationshipJSON = new JSONObject(p2pCopyRequestJSON);  // Convert to JSONObject
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Method to prepare and finalize the JSON payload
+    @When("I prepare the copy relationships JSON payload")
+    public void prepareCopyRelationshipsJSON() {
+        // Finalize the payload by replacing placeholders with actual values
+        String p2pCopyRequestFinalJSON = p2pCopyRequestJSON.replace("{targetPartyId}", p2PCopyRequest.getMainPartyId());
+
+        p2pCopyRelationshipJSON = new JSONObject(p2pCopyRequestFinalJSON);  // Final JSONObject
+        p2pCopyRequestJSON = p2pCopyRelationshipJSON.toString();  // Final JSON string
+    }
+
+    // Method to send the request and get the response
+    @When("I send the copy request")
+    public void sendCopyRequest() {
+        try {
+            String response = KerberosClient.PostRequest(copyRelationshipsURI, p2pCopyRequestJSON);  // Using the final JSON string
+            httpResponse = new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Validation of copyStatus
+    @Then("the copyStatus should be {string}")
+    public void verifyCopyStatus(String expectedStatus) {
+        Assert.assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        JSONObject jsonResponse = new JSONObject(httpResponse.getBody());
+        String actualStatus = jsonResponse.getString("copyStatus");
+        Assert.assertEquals(expectedStatus, actualStatus);
+    }
+
+    // Validation of the response message
+    @Then("the response should contain the message {string}")
+    public void verifyResponseMessage(String expectedMessage) {
+        JSONObject jsonResponse = new JSONObject(httpResponse.getBody());
+        String actualMessage = jsonResponse.getString("message");
+        Assert.assertEquals(expectedMessage, actualMessage);
+    }
+}
+
+
+
+-----------------------------------
 @When("I prepare the copy relationships JSON payload")
 public void prepareCopyRelationshipsJSON() {
     // Load the template JSON from the file
