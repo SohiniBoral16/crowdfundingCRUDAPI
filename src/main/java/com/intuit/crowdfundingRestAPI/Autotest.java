@@ -1,4 +1,56 @@
 
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.stream.IntStream;
+
+public class PartyRelationshipProcessor {
+
+    public void processAndDeleteDuplicates(JSONArray relatedPartyList, List<P2PCopyRelationship> sourceParties) throws Exception {
+        // Traverse JSONArray using IntStream to handle each JSONObject
+        IntStream.range(0, relatedPartyList.length())
+                .mapToObj(relatedPartyList::getJSONObject)
+                .forEach(relatedParty -> {
+                    // Extract role1PartyId and relationshipTypeId using Java 11 var
+                    var role1PartyId = relatedParty.getJSONObject("p2pRelationshipRole1Type").getString("ID");
+                    var relationshipTypeId = relatedParty.getJSONObject("partyRelationshipType").getString("ID");
+
+                    // Check for duplicates in sourceParties using stream
+                    sourceParties.stream()
+                            .filter(sourceParty -> sourceParty.getSourcePartyId().equals(role1PartyId)
+                                    && sourceParty.getRelationshipTypeIds().contains(relationshipTypeId))
+                            .findFirst()
+                            .ifPresent(sourceParty -> {
+                                try {
+                                    // If a match is found, create and send deletion payload
+                                    var deletePayload = createDeletionPayload(role1PartyId, relationshipTypeId);
+                                    performDeletion(deletePayload);
+                                } catch (Exception e) {
+                                    e.printStackTrace();  // Handle exception properly
+                                }
+                            });
+                });
+    }
+
+    private String createDeletionPayload(String partyId, String relationshipTypeId) {
+        // Use String::format in Java 11 to create the payload with placeholders
+        return String.format(p2pDeleteJSONString, partyId, relationshipTypeId);
+    }
+
+    private void performDeletion(String deletePayload) throws Exception {
+        var response = KerberosClient.PostRequest(deleteUrl, deletePayload);
+        var responseBody = new JSONObject(EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8));
+
+        // Log the response in a modern way
+        System.out.println(String.format("Delete status: %s", responseBody.getString("status")));
+        System.out.println(String.format("Delete message: %s", responseBody.getString("message")));
+    }
+}
+
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
