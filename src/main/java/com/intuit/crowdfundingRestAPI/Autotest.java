@@ -1,4 +1,68 @@
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.apache.http.HttpResponse;
+import org.apache.http.util.EntityUtils;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.stream.IntStream;
+
+public class PartyRelationshipProcessor {
+
+    public void processAndDeleteDuplicates(JSONArray relatedPartyList, List<P2PCopyRelationship> sourceParties) throws Exception {
+        // Traverse JSONArray using IntStream to handle each JSONObject
+        IntStream.range(0, relatedPartyList.length())
+                .mapToObj(relatedPartyList::getJSONObject)
+                .forEach(relatedParty -> {
+                    // Extract role1PartyId and relationshipTypeId using Java 11 var
+                    var role1PartyId = relatedParty.getJSONObject("p2pRelationshipRole1Type").getString("ID");
+                    var relationshipTypeId = relatedParty.getJSONObject("partyRelationshipType").getString("ID");
+
+                    // Check for duplicates in sourceParties using stream
+                    sourceParties.stream()
+                            .filter(sourceParty -> sourceParty.getSourcePartyId().equals(role1PartyId)
+                                    && sourceParty.getRelationshipTypeIds().contains(relationshipTypeId))
+                            .findFirst()
+                            .ifPresent(sourceParty -> {
+                                try {
+                                    // If a match is found, create and send deletion payload
+                                    var deletePayload = createDeletionPayload(role1PartyId, relationshipTypeId);
+                                    performDeletion(deletePayload);
+                                } catch (Exception e) {
+                                    e.printStackTrace();  // Handle exception properly
+                                }
+                            });
+                });
+    }
+
+    // Helper method to create the deletion payload
+    private String createDeletionPayload(String partyId, String relationshipTypeId) {
+        // Prepare deletion payload using String replacement
+        return p2pRelationshipDeleteJSON.toString()
+            .replace("{:partyID}", partyId)
+            .replace("{:relationshipTypeID}", relationshipTypeId);
+    }
+
+    // Helper method to perform the deletion via an HTTP request
+    private void performDeletion(String deletePayload) throws Exception {
+        // Create the JSON object for deletion
+        JSONObject p2pRelationshipDeleteJSON = new JSONObject(deletePayload);
+
+        // Make HTTP request to delete the relationship
+        HttpResponse httpResponse = KerberosClient.PostRequest(p2pRelationshipDeleteURI, p2pRelationshipDeleteJSON);
+
+        // Parse the response
+        var responseBodyJSON = new JSONObject(EntityUtils.toString(httpResponse.getEntity(), StandardCharsets.UTF_8));
+
+        // Log the result
+        System.out.println("Delete status: " + responseBodyJSON.getString("status"));
+        System.out.println("Delete message: " + responseBodyJSON.getString("message"));
+    }
+}
+
+
+-------------------
 import org.json.JSONObject;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
