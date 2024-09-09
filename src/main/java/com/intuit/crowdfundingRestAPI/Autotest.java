@@ -1,4 +1,36 @@
 
+import org.json.JSONObject;
+import org.apache.http.HttpResponse;
+import org.apache.http.util.EntityUtils;
+
+import java.nio.charset.StandardCharsets;
+
+public class PartyRelationshipProcessor {
+
+    public void deleteRelatedParties(String mainPartyId, String relatedPartyId, String relationshipCode) throws Exception {
+        // Prepare payload for deletion based on provided IDs and relationship type
+        String p2pDeleteJSONString = p2pRelationshipDeleteJSON.toString()
+            .replace("{:partyID}", mainPartyId)
+            .replace("{:relationshipTypeID}", RelationshipType.getRelationshipId(relationshipCode))
+            .replace("{:relatedParty}", relatedPartyId);
+
+        // Convert payload to JSON object
+        JSONObject p2pRelationshipDeleteJSON = new JSONObject(p2pDeleteJSONString);
+
+        // Make HTTP call for deletion
+        HttpResponse httpResponse = KerberosClient.PostRequest(p2pRelationshipDeleteURI, p2pRelationshipDeleteJSON);
+
+        // Process the response
+        JSONObject responseBodyJSON = new JSONObject(EntityUtils.toString(httpResponse.getEntity(), StandardCharsets.UTF_8));
+
+        // Log the response status and message
+        System.out.println("Delete status: " + responseBodyJSON.getString("status"));
+        System.out.println("Delete message: " + responseBodyJSON.getString("message"));
+    }
+}
+
+
+
 
 import org.json.JSONArray;
 import org.json.JSONObject;
