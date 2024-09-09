@@ -1,4 +1,57 @@
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.List;
+import java.util.stream.IntStream;
+
+public class JsonHandler {
+
+    public void checkAndDeleteRelatedParties(JSONArray relatedPartyDetails, List<String> sourcePartyIds, List<String> relationshipTypeIds, String targetPartyId) throws Exception {
+        
+        // Traverse through the JSONArray using streams
+        IntStream.range(0, relatedPartyDetails.length())
+                 .mapToObj(relatedPartyDetails::getJSONObject)
+                 .filter(relatedParty -> {
+                     String role1PartyId = relatedParty.getString("role1Party");
+                     String relationshipTypeId = relatedParty.getString("relationshipTypeId");
+                     return sourcePartyIds.contains(role1PartyId) && relationshipTypeIds.contains(relationshipTypeId);
+                 })
+                 .forEach(relatedParty -> {
+                     try {
+                         String role1PartyId = relatedParty.getString("role1Party");
+                         String relationshipTypeId = relatedParty.getString("relationshipTypeId");
+
+                         // Create and send deletion payload for matching entries
+                         String deletePayload = createDeletionPayload(targetPartyId, role1PartyId, relationshipTypeId);
+                         performDeletion(deletePayload);
+                         
+                     } catch (Exception e) {
+                         e.printStackTrace();  // Handle exception here
+                     }
+                 });
+    }
+
+    private String createDeletionPayload(String targetPartyId, String sourcePartyId, String relationshipTypeId) {
+        // Use a String template in Java 11 to replace values
+        return p2pDeleteJSONString.replace("{:partyID}", targetPartyId)
+                                  .replace("{:relatedParty}", sourcePartyId)
+                                  .replace("{:relationshipTypeID}", relationshipTypeId);
+    }
+
+    private void performDeletion(String deletePayload) throws Exception {
+        HttpResponse response = KerberosClient.PostRequest(deleteUrl, deletePayload);
+        JSONObject responseBody = new JSONObject(EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8));
+
+        // Log response details
+        System.out.println("Delete status: " + responseBody.getString("status"));
+        System.out.println("Delete message: " + responseBody.getString("message"));
+    }
+}
+
+
+
+-------------------------------------
 @Then("the functionality will be skipped completely, the copy status should be {string}")
 public void validateSkipAllParties(String expectedCopyStatus) throws Exception {
     String actualResponseBody = httpResponse.getBody();
