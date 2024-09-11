@@ -1,4 +1,30 @@
 
+Feature: As a user, I want to maintain P2P Relationships so that it fulfills the regulatory requirements.
+
+Background:
+  Given Main partyId <mainPartyId> is available
+  Then Validate given party is available or not
+
+Scenario Outline: User searches main party and gets related parties on P2P screen
+  Given Main partyId <mainPartyId> is available
+  Then all the linked related parties are returned and validated
+    | mainPartyId   | relatedPartyId | relationshipType | percentageOfRelationship | percentageValue |
+    | <mainPartyId> | <relatedPartyId1> | <relationshipType1> | <percentageOfRelationship1> | <percentageValue1> |
+    | <mainPartyId> | <relatedPartyId2> | <relationshipType2> | <percentageOfRelationship2> | <percentageValue2> |
+
+@P2PUat
+Examples: UAT Environment
+  | mainPartyId   | relatedPartyId1 | relationshipType1  | percentageOfRelationship1 | percentageValue1 | relatedPartyId2 | relationshipType2 | percentageOfRelationship2 | percentageValue2 |
+  | BBB00374160   | BBB00373795     | Is an Owner of     | OVER 15PC                 | 25.0             | BBB00739795     | Is an Owner of    | OVER 15PC                 | 35.0             |
+
+@P2PNonUat
+Examples: Other Environment
+  | mainPartyId   | relatedPartyId1 | relationshipType1  | percentageOfRelationship1 | percentageValue1 | relatedPartyId2 | relationshipType2 | percentageOfRelationship2 | percentageValue2 |
+  | BBB00374160   | BBB00377799     | Is an Owner of     | OVER 10PC                 | 10.0             | BBB00737795     | Is an Owner of    | OVER 20PC                 | 20.0             |
+
+
+
+------------------
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.apache.http.HttpResponse;
