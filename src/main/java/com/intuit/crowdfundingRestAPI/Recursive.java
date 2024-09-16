@@ -1,3 +1,60 @@
+private P2PHierarchyParty buildP2PHierarchyRelationshipByPartyId(Party rootParty, Set<String> processedParties) {
+
+    // Retrieve root party ID
+    String rootPartyId = rootParty.getPartyID();
+
+    // Return early if the party has already been processed to avoid infinite loops
+    if (processedParties.contains(rootPartyId)) {
+        return null;
+    }
+
+    // Create a new P2PHierarchyParty object using the builder
+    P2PHierarchyParty p2pHierarchyParty = getP2PHierarchyParty(rootParty);
+
+    // Mark this party as processed
+    processedParties.add(rootPartyId);
+
+    // Fetch related parties and return early if none exist
+    List<PartyToPartyRelationship> relatedPartyList = rootParty.getRelatedPartyList()
+            .stream()
+            .collect(Collectors.toList());
+
+    if (relatedPartyList.isEmpty()) {
+        return p2pHierarchyParty; // No related parties, return early
+    }
+
+    // Process each related party
+    relatedPartyList.stream()
+        .map(PartyToPartyRelationship::getRole1Party)
+        .filter(role1Party -> role1Party.getPartyID() != null && !processedParties.contains(role1Party.getPartyID()))
+        .forEach(role1Party -> {
+            String childPartyId = role1Party.getPartyID();
+
+            // Retrieve child party details from Coda
+            Party childParty = codaQueryClient.getPartyAttributes(childPartyId);
+
+            // Recursively build the child hierarchy
+            P2PHierarchyParty childHierarchy = buildP2PHierarchyRelationshipByPartyId(childParty, processedParties);
+
+            // If child hierarchy is successfully built, add it to the root party
+            if (childHierarchy != null) {
+                P2PHierarchyRelationshipAttributes relationshipAttributes = getRelationshipAttributeDTO(childParty);
+                P2PHierarchyRelationshipByPartyId relationship = P2PHierarchyRelationshipByPartyId.builder()
+                        .childParty(childHierarchy)
+                        .relationshipAttributes(relationshipAttributes)
+                        .build();
+
+                // Add the relationship to the root party
+                p2pHierarchyParty.addP2PHierarchyParty(childHierarchy, relationship);
+            }
+        });
+
+    // Return the final hierarchy party object
+    return p2pHierarchyParty;
+}
+
+----------------------------------------
+
 public P2PHierarchyParty buildP2PHierarchyRelationshipByPartyId(Party rootParty, Set<String> processedParties) {
 
     // Retrieve root party ID
