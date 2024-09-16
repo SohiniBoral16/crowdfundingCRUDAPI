@@ -1,4 +1,59 @@
 
+public P2PHierarchyParty buildP2PRelationshipHierarchy(@NonNull String partyId) {
+    Map<String, Party> codaDetails = new LinkedHashMap<>();
+    Party rootParty = codaQueryClient.getPartyWithAttributesPOST(partyId, VISUALIZATION_JOIN_ATTRIBUTES);
+    codaDetails.put(rootParty.getPartyID(), rootParty);
+    
+    Queue<P2PHierarchyParty> p2pHierarchyPartyQueue = new LinkedList<>();
+    Set<String> processedParties = new HashSet<>(); // To track processed parties
+
+    // Step 1: Maintain queue to process parties
+    List<String> relatedPartyIds = rootParty.getRelatedPartyList().stream()
+        .map(p -> p.getRole1party().getPartyID()).collect(Collectors.toList());
+    p2pHierarchyPartyQueue.addAll(getP2PHierarchyParties(relatedPartyIds));
+    
+    // Mark the root as processed
+    processedParties.add(rootParty.getPartyID());
+    
+    while (!p2pHierarchyPartyQueue.isEmpty()) {
+        // Poll the current party from the queue
+        P2PHierarchyParty currentParty = p2pHierarchyPartyQueue.poll();
+        
+        // Get the child parties of the current party
+        List<String> childPartyIds = currentParty.getRelatedPartyList().stream()
+            .map(p -> p.getRole1party().getPartyID())
+            .collect(Collectors.toList());
+
+        // Add the children to the codaDetails map by making a batch coda call
+        List<Party> childParties = codaQueryClient.getPartyWithAttributesPOST(childPartyIds, VISUALIZATION_JOIN_ATTRIBUTES);
+        childParties.forEach(childParty -> codaDetails.put(childParty.getPartyID(), childParty));
+
+        // Only add children that haven't been processed
+        childParties.stream()
+            .map(this::getP2PHierarchyParty) // Convert to hierarchy parties
+            .filter(p -> !processedParties.contains(p.getPartyId())) // Filter out already processed parties
+            .forEach(p -> {
+                p2pHierarchyPartyQueue.add(p); // Add unprocessed children to the queue
+                processedParties.add(p.getPartyId()); // Mark them as processed
+            });
+
+        // Perform your mapping logic here for hierarchy creation
+        // You can call your getRelationshipAttributesBetter method for mapping
+    }
+
+    // Build and return the hierarchy based on your codaDetails and processed parties
+    return createHierarchyStructure(rootParty, codaDetails);
+}
+
+private List<P2PHierarchyParty> getP2PHierarchyParties(List<String> partyIds) {
+    // Create and return P2PHierarchyParty objects from party IDs
+    return partyIds.stream()
+        .map(this::getP2PHierarchyParty)
+        .collect(Collectors.toList());
+}
+
+
+----------------------------------
 private Map<String, P2PHierarchyRelationship> getRelationshipAttributesBetter(Map<String, Party> codaDetails, 
     List<PartyToPartyRelationship> partyRelationships) {
 
