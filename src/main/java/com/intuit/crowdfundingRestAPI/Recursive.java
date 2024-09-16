@@ -1,4 +1,87 @@
+public P2PHierarchyParty buildP2PHierarchyRelationshipByPartyIdBFS(Party rootParty) {
+    
+    // Initialize the processed parties set and queue for BFS
+    Set<String> processedParties = new HashSet<>();
+    Queue<P2PHierarchyParty> partyQueue = new LinkedList<>();
 
+    // Create the root hierarchy party
+    P2PHierarchyParty rootHierarchyParty = getP2PHierarchyParty(rootParty);
+    partyQueue.add(rootHierarchyParty);
+    processedParties.add(rootParty.getPartyID());
+
+    // While there are parties to process in the queue
+    while (!partyQueue.isEmpty()) {
+        // Dequeue the next party to process
+        P2PHierarchyParty currentHierarchyParty = partyQueue.poll();
+        Party currentParty = getPartyByHierarchyParty(currentHierarchyParty); // Assuming a method to retrieve the Party from P2PHierarchyParty
+
+        // Fetch related parties for the current party
+        List<PartyToPartyRelationship> relatedPartyList = currentParty.getRelatedPartyList();
+
+        if (relatedPartyList.isEmpty()) {
+            continue;
+        }
+
+        // Collect all child party IDs
+        List<String> childPartyIds = relatedPartyList.stream()
+            .map(PartyToPartyRelationship::getRole1Party)
+            .map(Party::getPartyID)
+            .filter(id -> id != null && !processedParties.contains(id))
+            .collect(Collectors.toList());
+
+        // Fetch all child party details in one batch call
+        List<Party> childParties = codaQueryClient.getPartyAttributesWithAttributesPOST(childPartyIds, VISUALIZATION_DOM_ATTRIBUTES);
+
+        // Iterate through the related parties
+        for (PartyToPartyRelationship relatedPartyRelationship : relatedPartyList) {
+            String childPartyId = relatedPartyRelationship.getRole1Party().getPartyID();
+
+            // Find the corresponding child party
+            Party childParty = childParties.stream()
+                .filter(p -> childPartyId.equals(p.getPartyID()))
+                .findFirst()
+                .orElse(null);
+
+            // If the child party is not found, skip it
+            if (childParty == null) {
+                continue;
+            }
+
+            // Check if the relationship type matches ownership types in the enum
+            String relationshipTypeId = relatedPartyRelationship.getRelationshipType().getId();
+            boolean isOwnershipType = P2POwnershipType.isOwnershipType(relationshipTypeId);
+
+            // For root parties, accept all relationships; for others, check ownership type
+            if (!currentParty.equals(rootParty) && !isOwnershipType) {
+                continue; // Skip non-ownership types for non-root parties
+            }
+
+            // Build the hierarchy party for the child party
+            P2PHierarchyParty childHierarchyParty = getP2PHierarchyParty(childParty);
+
+            // Build the relationship attributes
+            P2PHierarchyRelationshipAttributes relationshipAttributes = getRelationshipAttributeDTO(relatedPartyRelationship);
+
+            // Create the relationship object
+            P2PHierarchyRelationshipByPartyId relationship = P2PHierarchyRelationshipByPartyId.builder()
+                .childParty(childHierarchyParty)
+                .relationshipAttributes(relationshipAttributes)
+                .build();
+
+            // Add the relationship to the current hierarchy party
+            currentHierarchyParty.addP2PHierarchyParty(childHierarchyParty, relationship);
+
+            // Mark this child party as processed and add it to the queue for further processing
+            processedParties.add(childParty.getPartyID());
+            partyQueue.add(childHierarchyParty);
+        }
+    }
+
+    return rootHierarchyParty;
+}
+
+
+---------------------------------------------
 private P2PHierarchyParty buildP2PHierarchyRelationshipByPartyId(Party rootParty, Set<String> processedParties) {
     
     // Retrieve root party ID
