@@ -1,5 +1,48 @@
 
 while (!p2pHierarchyPartyQueue2.isEmpty()) {
+    // Poll the next party ID from the queue
+    for (String partyId1 : Utils.pollAll(p2pHierarchyPartyQueue2)) {
+        // Retrieve the corresponding child party from codaDetails
+        Party childParty = codaDetails.get(partyId1);
+
+        // Check if the child party has related parties, i.e., it's not a leaf node
+        if (!childParty.getRelatedPartyList().isEmpty()) {
+            // Ensure that the relationship map is initialized for this party
+            P2PHierarchyRelationship existingRelationship = p2pHierarchyRelationshipMap.get(partyId1);
+            if (existingRelationship == null) {
+                existingRelationship = new P2PHierarchyRelationship(getP2PHierarchyParty(childParty), new ArrayList<>());
+                p2pHierarchyRelationshipMap.put(partyId1, existingRelationship);
+            }
+
+            // Get or initialize the child relationship map
+            Map<String, P2PHierarchyRelationship> childRelationshipMap = existingRelationship.getP2PHierarchyRelationship();
+            if (childRelationshipMap == null) {
+                childRelationshipMap = new HashMap<>();
+                existingRelationship.setP2PHierarchyRelationship(childRelationshipMap);
+            }
+
+            // Populate the child relationship map with related parties
+            childRelationshipMap.putAll(getRelationshipAttributesBetter1(codaDetails, childParty.getRelatedPartyList()));
+
+            // Add related parties to the queue for further processing
+            p2pHierarchyPartyQueue2.addAll(
+                childParty.getRelatedPartyList().stream()
+                    .map(x -> x.getRole1party().getPartyID())
+                    .collect(Collectors.toList())
+            );
+        } else {
+            // If no related parties, ensure the relationship map is initialized with an empty structure
+            p2pHierarchyRelationshipMap.putIfAbsent(
+                partyId1, 
+                new P2PHierarchyRelationship(getP2PHierarchyParty(childParty), new ArrayList<>())
+            );
+        }
+    }
+}
+
+
+-------------------------++-------------+
+while (!p2pHierarchyPartyQueue2.isEmpty()) {
     // Poll the next party from the queue
     for (String partyId1 : Utils.pollAll(p2pHierarchyPartyQueue2)) {
         Party childParty = codaDetails.get(partyId1);  // Fetch child party from codaDetails
