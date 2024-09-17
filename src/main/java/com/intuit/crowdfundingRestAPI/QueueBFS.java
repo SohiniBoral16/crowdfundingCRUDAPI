@@ -1,4 +1,44 @@
 
+// Check if the child party has related parties, i.e., it's not a leaf node
+if (!childParty.getRelatedPartyList().isEmpty()) {
+    // Ensure that the relationship map is initialized for this party
+    P2PHierarchyRelationship existingRelationship = p2pHierarchyRelationshipMap.get(partyId1);
+    if (existingRelationship == null) {
+        existingRelationship = new P2PHierarchyRelationship(getP2PHierarchyParty(childParty), new ArrayList<>());
+        p2pHierarchyRelationshipMap.put(partyId1, existingRelationship);
+    }
+
+    // Get the child party object from the existing relationship
+    P2PHierarchyParty existingChildParty = existingRelationship.getChildParty();
+
+    // If the child party's internal relationship map is null, initialize it
+    if (existingChildParty.getP2PHierarchyRelationship() == null) {
+        existingChildParty.setP2PHierarchyRelationship(new HashMap<>());
+    }
+
+    // Populate the child party's internal relationship map with related parties
+    existingChildParty.getP2PHierarchyRelationship().putAll(
+        getRelationshipAttributesBetter1(codaDetails, childParty.getRelatedPartyList())
+    );
+
+    // Add related parties to the queue for further processing
+    p2pHierarchyPartyQueue2.addAll(
+        childParty.getRelatedPartyList().stream()
+            .map(x -> x.getRole1party().getPartyID())
+            .collect(Collectors.toList())
+    );
+} else {
+    // If no related parties, ensure the relationship map is initialized with an empty structure
+    p2pHierarchyRelationshipMap.putIfAbsent(
+        partyId1, 
+        new P2PHierarchyRelationship(getP2PHierarchyParty(childParty), new ArrayList<>())
+    );
+}
+
+
+
+
+
 while (!p2pHierarchyPartyQueue2.isEmpty()) {
     // Poll the next party ID from the queue
     for (String partyId1 : Utils.pollAll(p2pHierarchyPartyQueue2)) {
