@@ -1,3 +1,41 @@
+
+while (!p2pHierarchyPartyQueue2.isEmpty()) {
+    // Poll the next party from the queue
+    for (String partyId1 : Utils.pollAll(p2pHierarchyPartyQueue2)) {
+        Party childParty = codaDetails.get(partyId1);  // Fetch child party from codaDetails
+
+        // Check if the relationship is empty or null
+        if (p2pHierarchyRelationshipMap.get(partyId1) == null || 
+            p2pHierarchyRelationshipMap.get(partyId1).getP2PHierarchyRelationship().isEmpty()) {
+
+            // If the relationship is empty, create a new relationship entry
+            P2PHierarchyParty childHierarchyParty = getP2PHierarchyParty(childParty);  // Convert to P2PHierarchyParty
+            P2PHierarchyRelationship newRelationship = new P2PHierarchyRelationship(childHierarchyParty, new ArrayList<>());
+            
+            // Insert this new relationship into the map
+            p2pHierarchyRelationshipMap.put(partyId1, newRelationship);
+
+            // Insert the child party’s related party list into the queue for further processing
+            List<String> relatedPartyIds = childParty.getRelatedPartyList().stream()
+                .map(x -> x.getRole1party().getPartyID())
+                .collect(Collectors.toList());
+
+            // If there are related parties, add them to the queue
+            if (!relatedPartyIds.isEmpty()) {
+                p2pHierarchyPartyQueue2.addAll(relatedPartyIds);
+            }
+
+            // Also, populate the relationship with attributes (if any)
+            p2pHierarchyRelationshipMap.get(partyId1).getP2PHierarchyRelationship()
+                .putAll(getRelationshipAttributesBetter1(codaDetails, childParty.getRelatedPartyList()));
+        }
+    }
+}
+
+
+
+
+
 public P2PHierarchyParty buildP2PRelationshipHierarchy(@NonNull String partyId) {
     // Step 1: Get the root party details from coda and store them in codaDetails
     Map<String, Party> codaDetails = new LinkedHashMap<>();
