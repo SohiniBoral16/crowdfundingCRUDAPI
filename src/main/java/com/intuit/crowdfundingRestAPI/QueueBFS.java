@@ -1,3 +1,78 @@
+public P2PHierarchyParty buildP2PRelationshipHierarchy(@NonNull String partyId) {
+    // Step 1: Get the root party and related details
+    Map<String, Party> codaDetails = new LinkedHashMap<>();
+    Party rootParty = codaQueryClient.getPartyWithAttributesPOST(partyId, VISUALIZATION_DOM_ATTRIBUTES);
+    codaDetails.put(rootParty.getPartyID(), rootParty);
+
+    // Step 2: Collect related party IDs and initialize the processing queue
+    Queue<String> p2pHierarchyPartyQueue = new LinkedList<>();
+    List<String> relatedPartyIds = rootParty.getRelatedPartyList()
+        .stream()
+        .map(p -> p.getRole1party().getPartyID())
+        .collect(Collectors.toList());
+    p2pHierarchyPartyQueue.addAll(relatedPartyIds);
+
+    // Step 3: BFS traversal for multilevel hierarchy processing
+    while (!p2pHierarchyPartyQueue.isEmpty()) {
+        String currentPartyId = p2pHierarchyPartyQueue.poll();
+        Party currentParty = codaDetails.get(currentPartyId);
+
+        // Fetch the child parties for the current party if not already fetched
+        if (currentParty == null) {
+            currentParty = codaQueryClient.getPartyWithAttributesPOST(currentPartyId, VISUALIZATION_DOM_ATTRIBUTES);
+            codaDetails.put(currentPartyId, currentParty);
+        }
+
+        // Add related party IDs of the current party to the queue for further processing
+        if (!currentParty.getRelatedPartyList().isEmpty()) {
+            List<String> childPartyIds = currentParty.getRelatedPartyList()
+                .stream()
+                .map(p -> p.getRole1party().getPartyID())
+                .collect(Collectors.toList());
+            p2pHierarchyPartyQueue.addAll(childPartyIds);
+        }
+    }
+
+    // Step 4: Map the coda details into a hierarchical structure using the relationship map
+    return mapToP2PHierarchyParty(codaDetails, rootParty);
+}
+
+private P2PHierarchyParty mapToP2PHierarchyParty(Map<String, Party> codaDetails, Party rootParty) {
+    // Initialize the root hierarchy party object
+    P2PHierarchyParty p2pHierarchyParty = getP2PHierarchyParty(rootParty);
+    Map<String, P2PHierarchyRelationship> p2pHierarchyRelationshipMap = new HashMap<>();
+
+    // Traverse the coda details and construct the hierarchy
+    for (String partyId : codaDetails.keySet()) {
+        Party party = codaDetails.get(partyId);
+        P2PHierarchyRelationship relationship = new P2PHierarchyRelationship(getP2PHierarchyParty(party), new ArrayList<>());
+        p2pHierarchyRelationshipMap.put(partyId, relationship);
+
+        // Process child relationships if available
+        if (!party.getRelatedPartyList().isEmpty()) {
+            Map<String, P2PHierarchyRelationship> childRelationshipMap = new HashMap<>();
+            for (PartyToPartyRelationship relatedParty : party.getRelatedPartyList()) {
+                String childPartyId = relatedParty.getRole1party().getPartyID();
+                Party childParty = codaDetails.get(childPartyId);
+
+                // Ensure the child party is processed and added
+                if (childParty != null) {
+                    childRelationshipMap.put(childPartyId, new P2PHierarchyRelationship(getP2PHierarchyParty(childParty), new ArrayList<>()));
+                }
+            }
+            // Set the child relationships to the current party's relationships
+            relationship.getChildParty().setP2PHierarchyRelationship(childRelationshipMap);
+        }
+    }
+
+    // Attach the relationship map to the root party
+    p2pHierarchyParty.getP2PHierarchyRelationship().putAll(p2pHierarchyRelationshipMap);
+    return p2pHierarchyParty;
+}
+
+
+
+
 
 // This method builds the hierarchical structure using BFS without recursion
 public P2PHierarchyParty buildP2PRelationshipHierarchy(@NonNull String partyId) {
