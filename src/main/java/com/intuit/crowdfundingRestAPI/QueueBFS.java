@@ -1,4 +1,47 @@
+public P2PHierarchyParty buildP2PRelationshipHierarchy(@NonNull String partyId) {
+    // Initialize the data structures
+    Map<String, Party> codaDetails = new LinkedHashMap<>();
+    Party rootParty = codaQueryClient.getPartyWithAttributesPOST(partyId, VISUALIZATION_JOIN_ATTRIBUTES);
+    codaDetails.put(rootParty.getPartyID(), rootParty);
 
+    P2PHierarchyParty rootHierarchyParty = getP2PHierarchyParty(rootParty);
+
+    // Initialize the queue for BFS traversal
+    Queue<P2PHierarchyParty> p2pHierarchyPartyQueue = new LinkedList<>();
+    p2pHierarchyPartyQueue.add(rootHierarchyParty);
+
+    // Process each party in BFS manner
+    while (!p2pHierarchyPartyQueue.isEmpty()) {
+        // Poll the next party in the queue
+        P2PHierarchyParty currentHierarchyParty = p2pHierarchyPartyQueue.poll();
+
+        // Get the list of related child parties for the current party
+        List<String> childPartyIds = currentHierarchyParty.getRelatedPartyList().stream()
+            .map(p -> p.getRole1party().getPartyID())
+            .collect(Collectors.toList());
+
+        // Fetch the child parties' details and update codaDetails
+        List<Party> childParties = codaQueryClient.getPartyWithAttributesPOST(childPartyIds, VISUALIZATION_JOIN_ATTRIBUTES);
+        childParties.forEach(childParty -> codaDetails.put(childParty.getPartyID(), childParty));
+
+        // For each child party, convert to P2PHierarchyParty and add to the queue
+        for (Party childParty : childParties) {
+            P2PHierarchyParty childHierarchyParty = getP2PHierarchyParty(childParty);
+
+            // Create and store the P2PHierarchyRelationship for the current party
+            P2PHierarchyRelationship p2pHierarchyRelationship = new P2PHierarchyRelationship(childHierarchyParty, new ArrayList<>());
+            currentHierarchyParty.getP2PHierarchyRelationship().put(childParty.getPartyID(), p2pHierarchyRelationship);
+
+            // Add the child party to the queue for further processing
+            p2pHierarchyPartyQueue.add(childHierarchyParty);
+        }
+    }
+
+    return rootHierarchyParty;
+}
+
+
+----------------------------------------
 private Map<String, P2PHierarchyRelationship> getRelationshipAttributesBetter(Map<String, Party> codaDetails, 
     List<PartyToPartyRelationship> partyRelationships) {
 
