@@ -1,4 +1,33 @@
 
+private Map<String, P2PHierarchyRelationship> getRelationshipAttributesBetter(Map<String, Party> codaDetails, 
+    List<PartyToPartyRelationship> partyRelationships) {
+
+    Map<String, P2PHierarchyRelationship> p2pHierarchyRelationshipMap = new HashMap<>();
+
+    for (PartyToPartyRelationship partyRelationship : partyRelationships) {
+        P2PHierarchyRelationshipAttributes relationshipAttributes = getRelationshipAttributes(partyRelationship);
+
+        // Ensure the child party exists in codaDetails
+        P2PHierarchyParty childParty = codaDetails.get(partyRelationship.getRole2party().getPartyID());
+        if (childParty == null) {
+            continue; // Skip if child party is missing
+        }
+
+        // Check for an existing relationship, or create a new one
+        P2PHierarchyRelationship p2pHierarchyRelationship = p2pHierarchyRelationshipMap.computeIfAbsent(
+            partyRelationship.getRole1party().getPartyID(), 
+            k -> new P2PHierarchyRelationship(childParty, new ArrayList<>()));
+
+        // Add the relationship attributes to the existing or new relationship
+        p2pHierarchyRelationship.getRelationshipAttributes().add(relationshipAttributes);
+    }
+
+    return p2pHierarchyRelationshipMap;
+}
+
+
+
+---------------+-----------------
 public P2PHierarchyParty buildP2PRelationshipHierarchy(@NonNull String partyId) {
     Map<String, Party> codaDetails = new LinkedHashMap<>();
     Party rootParty = codaQueryClient.getPartyWithAttributesPOST(partyId, VISUALIZATION_JOIN_ATTRIBUTES);
