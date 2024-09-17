@@ -5,6 +5,40 @@ private Map<String, P2PHierarchyRelationship> getRelationshipAttributesBetter(Ma
     Map<String, P2PHierarchyRelationship> p2pHierarchyRelationshipMap = new HashMap<>();
 
     for (PartyToPartyRelationship partyRelationship : partyRelationships) {
+        // Convert PartyToPartyRelationship into P2PHierarchyRelationshipAttributes
+        P2PHierarchyRelationshipAttributes relationshipAttributes = getRelationshipAttributes(partyRelationship);
+
+        // Fetch the child party (Role1party) from codaDetails and convert to P2PHierarchyParty
+        Party childPartyFromCoda = codaDetails.get(partyRelationship.getRole1party().getPartyID());
+        if (childPartyFromCoda == null) {
+            continue; // Skip if the child party isn't present in codaDetails
+        }
+
+        P2PHierarchyParty childParty = getP2PHierarchyParty(childPartyFromCoda);  // Convert Party to P2PHierarchyParty
+
+        // Use Optional to get the existing P2PHierarchyRelationship or create a new one
+        P2PHierarchyRelationship p2pHierarchyRelationship = Optional.ofNullable(
+                p2pHierarchyRelationshipMap.get(partyRelationship.getRole1party().getPartyID()))
+                .orElseGet(() -> new P2PHierarchyRelationship(childParty, new ArrayList<>()));
+
+        // Add the relationship attributes to the P2PHierarchyRelationship
+        p2pHierarchyRelationship.getRelationshipAttributes().add(relationshipAttributes);
+
+        // Update the map with the P2PHierarchyRelationship
+        p2pHierarchyRelationshipMap.put(partyRelationship.getRole1party().getPartyID(), p2pHierarchyRelationship);
+    }
+
+    return p2pHierarchyRelationshipMap;
+}
+
+
+----------------------------------
+private Map<String, P2PHierarchyRelationship> getRelationshipAttributesBetter(Map<String, Party> codaDetails, 
+    List<PartyToPartyRelationship> partyRelationships) {
+
+    Map<String, P2PHierarchyRelationship> p2pHierarchyRelationshipMap = new HashMap<>();
+
+    for (PartyToPartyRelationship partyRelationship : partyRelationships) {
         P2PHierarchyRelationshipAttributes relationshipAttributes = getRelationshipAttributes(partyRelationship);
 
         // Ensure the child party exists in codaDetails
