@@ -1,3 +1,69 @@
+public P2PHierarchyParty buildP2PRelationshipHierarchy(@NonNull String partyId) {
+    // Step 1: Get the root party details from coda and store them in codaDetails
+    Map<String, Party> codaDetails = new LinkedHashMap<>();
+    Party rootParty = codaQueryClient.getPartyWithAttributesPOST(partyId, VISUALIZATION_JOIN_ATTRIBUTES);
+    codaDetails.put(rootParty.getPartyID(), rootParty);
+
+    // Convert root party into P2PHierarchyParty object
+    P2PHierarchyParty rootHierarchyParty = getP2PHierarchyParty(rootParty);
+
+    // Step 2: Initialize queue for BFS
+    Queue<P2PHierarchyParty> p2pHierarchyPartyQueue = new LinkedList<>();
+    List<String> relatedPartyIds = rootParty.getRelatedPartyList().stream()
+            .map(p -> p.getRole1party().getPartyID())
+            .collect(Collectors.toList());
+
+    // Add the related parties to the queue for BFS processing
+    p2pHierarchyPartyQueue.addAll(getP2PHierarchyParties(relatedPartyIds));
+
+    List<PartyToPartyRelationship> childPartiesRelationships;
+
+    // Step 3: BFS traversal to map the hierarchy
+    while (!p2pHierarchyPartyQueue.isEmpty()) {
+        P2PHierarchyParty currentHierarchyParty = p2pHierarchyPartyQueue.poll();  // Dequeue a party
+        
+        // Step 3a: Fetch child parties for the current hierarchy party
+        childPartiesRelationships = currentHierarchyParty.getRelatedPartyList();  // Get the related party list
+
+        // Fetch child party IDs from relationships
+        List<String> childPartyIds = childPartiesRelationships.stream()
+            .map(p -> p.getRole1party().getPartyID())
+            .collect(Collectors.toList());
+
+        // Fetch child parties from codaDetails (already fetched) 
+        List<Party> childParties = childPartyIds.stream()
+            .map(codaDetails::get)  // Get the Party object from codaDetails
+            .filter(Objects::nonNull)  // Ensure we only process non-null entries
+            .collect(Collectors.toList());
+
+        // Step 3b: For each child party, convert to P2PHierarchyParty and map the relationships
+        for (Party childParty : childParties) {
+            P2PHierarchyParty childHierarchyParty = getP2PHierarchyParty(childParty);  // Convert Party to P2PHierarchyParty
+
+            // Create the relationship between parent and child
+            P2PHierarchyRelationship p2pHierarchyRelationship = new P2PHierarchyRelationship(childHierarchyParty, new ArrayList<>());
+            currentHierarchyParty.getP2PHierarchyRelationship().put(childParty.getPartyID(), p2pHierarchyRelationship);
+
+            // If the child party has its own related parties (children), add to the queue for further processing
+            List<String> childRelatedPartyIds = childParty.getRelatedPartyList().stream()
+                .map(p -> p.getRole1party().getPartyID())  // Fetch Role1party (child)
+                .collect(Collectors.toList());
+
+            if (!childRelatedPartyIds.isEmpty()) {
+                // Set the related parties for the child party and add it to the queue
+                childHierarchyParty.setRelatedPartyList(childParty.getRelatedPartyList());
+                p2pHierarchyPartyQueue.add(childHierarchyParty);  // Enqueue the child party for further processing
+            }
+        }
+    }
+
+    // Step 4: After processing all the parties, return the root of the hierarchy
+    return rootHierarchyParty;
+}
+
+
+
+
 
 public P2PHierarchyParty buildP2PRelationshipHierarchy(@NonNull String partyId) {
     // Step 1: Get the root party details
