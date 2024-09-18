@@ -1,4 +1,71 @@
 
+@Test
+void testPublicMethodThatUsesP2PHierarchyRelationshipAttributesMapperWithNullValues() {
+    // Mock PartyToPartyRelationship with null values for fields
+    PartyToPartyRelationship mockRelationship = mock(PartyToPartyRelationship.class);
+    when(mockRelationship.getPartyRelationshipType()).thenReturn(null); // Null field
+    when(mockRelationship.getJapanUltimateBeneficialOwnerApplicability()).thenReturn(null); // Null field
+    when(mockRelationship.getPercentOfBeneficialOwnership()).thenReturn(45); // Valid field
+
+    // Mock the public method that calls the private mapper internally
+    List<PartyToPartyRelationship> mockRelationshipList = List.of(mockRelationship);
+    Party mockParty = mock(Party.class);
+    when(mockParty.getRelatedPartyList()).thenReturn(mockRelationshipList);
+
+    // Call the public method that uses the private mapper
+    P2PHierarchyParty result = p2pHierarchyService.getP2PHierarchyParty(mockParty);
+
+    // Now check the fields in result, which indirectly confirms the private mapper's output
+    assertNotNull(result);
+    assertEquals(1, result.getP2PHierarchyRelationship().size());
+
+    // Access the mapped relationship attributes and validate them
+    P2PHierarchyRelationshipAttributes attributes = result.getP2PHierarchyRelationship().values().stream()
+            .findFirst()
+            .orElseThrow()
+            .getRelationshipAttributes()
+            .get(0);
+
+    // Validate that null values were handled correctly
+    assertNull(attributes.getRelationshipTypeId()); // Null field
+    assertNull(attributes.getJapanUltimateBeneficialOwnerApplicability()); // Null field
+    assertEquals(45, attributes.getPercentOfBeneficialOwnership()); // Non-null field
+}
+
+@Test
+void testPublicMethodThatUsesP2PHierarchyRelationshipAttributesMapperWithMixedValues() {
+    // Mock PartyToPartyRelationship with mixed null and valid values
+    PartyToPartyRelationship mockRelationship = mock(PartyToPartyRelationship.class);
+    when(mockRelationship.getPartyRelationshipType()).thenReturn(null); // Null value
+    when(mockRelationship.getPercentOfBeneficialOwnership()).thenReturn(null); // Null value
+    when(mockRelationship.getPercentOfAnnualOperatingCostFromMajorDonor()).thenReturn(25); // Valid value
+
+    // Mock the public method that uses the private mapper internally
+    List<PartyToPartyRelationship> mockRelationshipList = List.of(mockRelationship);
+    Party mockParty = mock(Party.class);
+    when(mockParty.getRelatedPartyList()).thenReturn(mockRelationshipList);
+
+    // Call the public method
+    P2PHierarchyParty result = p2pHierarchyService.getP2PHierarchyParty(mockParty);
+
+    // Now check the fields in result, which indirectly confirms the private mapper's output
+    assertNotNull(result);
+    assertEquals(1, result.getP2PHierarchyRelationship().size());
+
+    // Access the mapped relationship attributes and validate them
+    P2PHierarchyRelationshipAttributes attributes = result.getP2PHierarchyRelationship().values().stream()
+            .findFirst()
+            .orElseThrow()
+            .getRelationshipAttributes()
+            .get(0);
+
+    // Validate that null values were handled correctly
+    assertNull(attributes.getRelationshipTypeId()); // Null value
+    assertNull(attributes.getPercentOfBeneficialOwnership()); // Null value
+    assertEquals(25, attributes.getPercentOfAnnualOperatingCostFromMajorDonor()); // Non-null value
+}
+
+---------------------------------------
 Optional.ofNullable(relatedParty)
         .filter(list -> !list.isEmpty()) // Check if the relatedParty list is not empty
         .ifPresent(list -> setRelatedPartyList(createRelatedParties(party, list))); // Call createRelatedParties if list is present and non-empty
