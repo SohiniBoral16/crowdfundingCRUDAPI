@@ -1,3 +1,17 @@
+@Test
+void getP2PRelationshipHierarchyWithNullPartyId() {
+    // Mocking the root party with a null partyId
+    Party mockRootParty = preparePartyObject("", "");  // passing empty string or null for the party ID
+    when(codaQueryClient.getPartyWithAttributesPOST(anyString(), anyList())).thenReturn(mockRootParty);
+    
+    // Now call the method and ensure it handles null partyId properly
+    P2PHierarchyParty result = p2PHierarchyService.getP2PRelationshipHierarchy("BBB12345457");
+    
+    // Assert that the result is either null or empty, depending on your method's behavior
+    assertNull(result.getPartyId(), "PartyId should be null for root party with null ID");
+    assertTrue(result.getP2PHierarchyRelationship().isEmpty(), "Relationships should be empty when partyId is null");
+}
+
 
 @Test
 void testPublicMethodThatUsesP2PHierarchyRelationshipAttributesMapperWithNullValues() {
