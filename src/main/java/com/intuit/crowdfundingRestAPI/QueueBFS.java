@@ -1,4 +1,76 @@
 
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.*;
+
+@ExtendWith(MockitoExtension.class)
+public class P2PHierarchyServiceTest {
+
+    @Mock
+    private CodaQueryClient codaQueryClient;  // Mock the external dependency
+
+    @InjectMocks
+    private P2PHierarchyService p2PHierarchyService;  // The service you're testing
+
+    private Party mockRootParty;
+    private Map<String, Party> mockCodaDetails;
+
+    @BeforeEach
+    public void setUp() {
+        // Initialize mockRootParty and mockCodaDetails with sample data
+        mockRootParty = new Party();
+        mockRootParty.setPartyID("rootPartyID");
+        mockRootParty.setPartyNameList(Collections.singletonList(new PartyName("Root Party")));
+
+        Party childParty1 = new Party();
+        childParty1.setPartyID("childParty1ID");
+        childParty1.setPartyNameList(Collections.singletonList(new PartyName("Child Party 1")));
+
+        Party childParty2 = new Party();
+        childParty2.setPartyID("childParty2ID");
+        childParty2.setPartyNameList(Collections.singletonList(new PartyName("Child Party 2")));
+
+        // Populate mockCodaDetails
+        mockCodaDetails = new HashMap<>();
+        mockCodaDetails.put(mockRootParty.getPartyID(), mockRootParty);
+        mockCodaDetails.put(childParty1.getPartyID(), childParty1);
+        mockCodaDetails.put(childParty2.getPartyID(), childParty2);
+
+        // Mock the external codaQueryClient calls
+        when(codaQueryClient.getPartyWithAttributesPOST("rootPartyID", "VISUALIZATION_DOM_ATTRIBUTES"))
+                .thenReturn(mockRootParty);
+
+        when(codaQueryClient.getPartiesWithAttributesPOST(anyList(), eq("VISUALIZATION_DOM_ATTRIBUTES")))
+                .thenReturn(Arrays.asList(childParty1, childParty2));
+    }
+
+    @Test
+    public void testGetP2PRelationshipHierarchy() {
+        // Call the method under test
+        P2PHierarchyParty result = p2PHierarchyService.getP2PRelationshipHierarchy("rootPartyID");
+
+        // Assert the results - you can expand this to assert on child relationships as needed
+        assertNotNull(result);
+        assertEquals("rootPartyID", result.getPartyId());
+        assertEquals("Root Party", result.getPartyName());
+
+        // Verify that the mock methods were called as expected
+        verify(codaQueryClient).getPartyWithAttributesPOST("rootPartyID", "VISUALIZATION_DOM_ATTRIBUTES");
+        verify(codaQueryClient).getPartiesWithAttributesPOST(anyList(), eq("VISUALIZATION_DOM_ATTRIBUTES"));
+    }
+}
+
+
+
+
 /**
  * This method builds the hierarchical relationships for a given party using BFS traversal.
  * It converts the party relationship data retrieved from the Coda service (codaDetails) 
