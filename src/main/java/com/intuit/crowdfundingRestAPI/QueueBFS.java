@@ -1,4 +1,25 @@
 
+/**
+ * This method builds the hierarchical relationships for a given party using BFS traversal.
+ * It converts the party relationship data retrieved from the Coda service (codaDetails) 
+ * into a structured P2PHierarchyParty object, including its relationships.
+ *
+ * Steps:
+ * 1. Fetch the root party details and its related parties.
+ * 2. For each related party, recursively retrieve its attributes and relationships from 
+ *    the Coda service and construct a hierarchy map.
+ * 3. Use a BFS approach to avoid recursion and iteratively fetch each child party’s details 
+ *    and relationships.
+ * 4. Populate the hierarchy map with the party's child relationships and associated attributes.
+ * 5. Return the fully populated P2PHierarchyParty object with all relationships.
+ *
+ * @param partyId The ID of the root party for which the hierarchy needs to be constructed.
+ * @return A P2PHierarchyParty object representing the entire hierarchical structure of the party.
+ */
+
+
+
+
 public P2PHierarchyParty buildP2PRelationshipHierarchy(@NonNull String partyId) {
     // Initialize the map to hold coda details and populate with root party attributes
     Map<String, Party> codaDetails = new LinkedHashMap<>();
