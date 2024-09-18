@@ -1,4 +1,9 @@
 
+Optional.ofNullable(relatedParty)
+        .filter(list -> !list.isEmpty()) // Check if the relatedParty list is not empty
+        .ifPresent(list -> setRelatedPartyList(createRelatedParties(party, list))); // Call createRelatedParties if list is present and non-empty
+
+
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
