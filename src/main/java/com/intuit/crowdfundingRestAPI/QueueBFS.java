@@ -1,6 +1,62 @@
 
 private P2PHierarchyParty mapToP2PHierarchyParty(Map<String, Party> codaDetails, Party rootParty) {
     // Initialize the root hierarchy party object
+    var rootHierarchyParty = getP2PHierarchyParty(rootParty);
+    var hierarchyPartyQueue = new LinkedList<P2PHierarchyParty>();
+
+    // Start BFS mapping with the root party
+    hierarchyPartyQueue.add(rootHierarchyParty);
+
+    // BFS traversal for mapping to the hierarchy structure
+    while (!hierarchyPartyQueue.isEmpty()) {
+        var currentHierarchyParty = hierarchyPartyQueue.poll();
+        var currentParty = codaDetails.get(currentHierarchyParty.getPartyId());
+
+        // Use Optional to avoid null checks
+        Optional.ofNullable(currentParty).ifPresent(party -> {
+            var currentRelationshipMap = currentHierarchyParty.getP2PHierarchyRelationship();
+
+            // For each related party of the current party, map the relationships
+            party.getRelatedPartyList().forEach(relationship -> {
+                var childParty = Optional.ofNullable(codaDetails.get(relationship.getRole1party().getPartyID()));
+
+                childParty.ifPresent(cp -> {
+                    var childHierarchyParty = getP2PHierarchyParty(cp);
+
+                    // Use computeIfAbsent to ensure new relationships are added when necessary
+                    var existingRelationship = currentRelationshipMap.computeIfAbsent(
+                            cp.getPartyID(),
+                            id -> new P2PHierarchyRelationship(childHierarchyParty, new ArrayList<>())
+                    );
+
+                    // Add relationship attributes
+                    existingRelationship.getRelationshipAttributes()
+                            .add(getRelationshipAttributes(relationship));
+
+                    // Add the child party to the BFS queue for further processing
+                    hierarchyPartyQueue.add(childHierarchyParty);
+                });
+            });
+        });
+    }
+
+    return rootHierarchyParty;
+}
+
+private P2PHierarchyRelationshipAttributes getRelationshipAttributes(PartyToPartyRelationship relationship) {
+    return P2PHierarchyRelationshipAttributes.builder()
+            .relationshipTypeId(relationship.getRelationshipType().getId())
+            .relationshipTypeName(relationship.getRelationshipType().getName())
+            .percentBeneficialOwnership(relationship.getOwnershipPercentage())
+            .build();
+}
+
+
+
+
+
+private P2PHierarchyParty mapToP2PHierarchyParty(Map<String, Party> codaDetails, Party rootParty) {
+    // Initialize the root hierarchy party object
     P2PHierarchyParty rootHierarchyParty = getP2PHierarchyParty(rootParty);
     Queue<P2PHierarchyParty> hierarchyPartyQueue = new LinkedList<>();
 
