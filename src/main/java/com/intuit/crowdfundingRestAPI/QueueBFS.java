@@ -1,4 +1,47 @@
 
+public P2PHierarchyParty buildP2PRelationshipHierarchy(@NonNull String partyId) {
+    // Initialize the map to hold coda details and populate with root party attributes
+    Map<String, Party> codaDetails = new LinkedHashMap<>();
+    Party rootParty = codaQueryClient.getPartyWithAttributesPOST(partyId, VISUALIZATION_OM_ATTRIBUTES);
+    codaDetails.put(rootParty.getPartyID(), rootParty);
+
+    // Initialize a queue for BFS traversal
+    Queue<String> p2PHierarchyPartyQueue = new LinkedList<>();
+    List<String> relatedPartyIds = rootParty.getRelatedPartyList().stream()
+        .map(p -> p.getRole1party().getPartyID())
+        .collect(Collectors.toList());
+    p2PHierarchyPartyQueue.addAll(relatedPartyIds);
+
+    // List to keep track of child parties
+    List<Party> childParties = new ArrayList<>();
+
+    // BFS traversal to process the hierarchy
+    while (!p2PHierarchyPartyQueue.isEmpty()) {
+        List<String> partyIds = Utils.pollAll(p2PHierarchyPartyQueue);
+
+        // Fetch child parties using a batch API call
+        List<Party> childPartiesFromAPI = codaQueryClient.getPartiesWithAttributesPOST(partyIds, VISUALIZATION_OM_ATTRIBUTES);
+
+        for (Party childParty : childPartiesFromAPI) {
+            codaDetails.put(childParty.getPartyID(), childParty);
+
+            // Filter and collect child related party IDs that are not already processed
+            List<String> childRelatedPartyIds = childParty.getRelatedPartyList().stream()
+                .filter(x -> !codaDetails.containsKey(x.getRole1party().getPartyID()))
+                .map(p -> p.getRole1party().getPartyID())
+                .collect(Collectors.toList());
+
+            // Update child party's relationship and queue up for further processing
+            childParty.setRelatedPartyList(childRelatedPartyIds);
+            p2PHierarchyPartyQueue.addAll(childRelatedPartyIds);
+        }
+    }
+
+    return mapToP2PHierarchyParty(codaDetails, rootParty);
+}
+
+
+
 private P2PHierarchyParty mapToP2PHierarchyParty(Map<String, Party> codaDetails, Party rootParty) {
     // Initialize the root hierarchy party object
     var rootHierarchyParty = getP2PHierarchyParty(rootParty);
