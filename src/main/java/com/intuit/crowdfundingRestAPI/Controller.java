@@ -1,6 +1,70 @@
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
+import java.util.List;
+import java.util.stream.Stream;
+
+@WebMvcTest(RelationshipVisualizationController.class)
+public class RelationshipVisualizationControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Mock
+    private P2PHierarchyService p2pHierarchyService;
+
+    @InjectMocks
+    private RelationshipVisualizationController relationshipVisualizationController;
+
+    private static Stream<Arguments> provideParameters() {
+        List<P2PVisualization> successfulResponseBody = List.of(new P2PVisualization(/* ... */));
+        List<P2PVisualization> failureResponseBody = List.of();
+        HttpStatus successStatus = HttpStatus.OK;
+        HttpStatus failureStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        return Stream.of(
+                Arguments.of("validMainPartyId", successfulResponseBody, successStatus),
+                Arguments.of("invalidMainPartyId", failureResponseBody, failureStatus)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideParameters")
+    public void testGetRelationshipVisualizationHierarchy(String mainPartyId, List<P2PVisualization> mockResponse, HttpStatus expectedStatus) throws Exception {
+        if (expectedStatus == HttpStatus.OK) {
+            when(p2pHierarchyService.getPartyVisualizationByPartyId(mainPartyId)).thenReturn(mockResponse);
+
+            mockMvc.perform(MockMvcRequestBuilders.post("/v2/visualization")
+                    .contentType(APPLICATION_JSON)
+                    .content("{\"mainPartyId\": \"" + mainPartyId + "\"}")
+                    .accept(APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(content().json(/* expected JSON structure for success */));
+        } else {
+            when(p2pHierarchyService.getPartyVisualizationByPartyId(mainPartyId)).thenThrow(new P2PServiceException("Error occurred"));
+
+            mockMvc.perform(MockMvcRequestBuilders.post("/v2/visualization")
+                    .contentType(APPLICATION_JSON)
+                    .content("{\"mainPartyId\": \"" + mainPartyId + "\"}")
+                    .accept(APPLICATION_JSON))
+                    .andExpect(status().isInternalServerError());
+        }
+    }
+}
+
+
+
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 import org.junit.jupiter.params.ParameterizedTest;
