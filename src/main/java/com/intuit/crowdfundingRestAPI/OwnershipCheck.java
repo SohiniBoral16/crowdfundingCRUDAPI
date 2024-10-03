@@ -1,4 +1,16 @@
 
+Optional.ofNullable(mainParty.getRelatedPartyList())
+    .ifPresent(relatedParties -> {
+        var toRemove = relatedParties.stream()
+            .filter(rp -> P2PHierarchyRelationship.isOwnershipType(rp.getPartyRelationshipType().getID()))
+            .collect(Collectors.toList());
+        
+        // Remove all filtered items from the original list
+        relatedParties.removeAll(toRemove);
+    });
+
+
+
 mainParty.getRelatedPartyList().forEach(rp -> {
     String relationshipTypeId = rp.getPartyRelationshipType().getID();
 
