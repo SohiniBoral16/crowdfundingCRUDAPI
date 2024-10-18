@@ -1,4 +1,37 @@
 
+var p2pHierarchyPartyQueue = new LinkedList<P2PHierarchyParty>();
+p2pHierarchyPartyQueue.add(rootPartyHierarchy);
+
+int iterationCount = 0;  // Counter for the number of iterations
+
+while (!p2pHierarchyPartyQueue.isEmpty()) {
+    iterationCount++;  // Increment the counter
+
+    if (iterationCount > 1000) {
+        throw new RuntimeException("Iteration limit exceeded: Loop executed more than 1000 times.");
+    }
+
+    var p2pHierarchyParty = p2pHierarchyPartyQueue.poll();
+    var codaParty = codaDetails.get(p2pHierarchyParty.getPartyId());
+
+    Optional.ofNullable(codaParty).ifPresent(party -> {
+        var p2pHierarchyRelationshipsByPartyId = party.getRelatedParties().stream()
+            .filter(p2pRel -> relatedPartiesIdsToProcess.contains(p2pRel.getRole1Party().getPartyID()))
+            .collect(Collectors.toList());
+        
+        p2pHierarchyRelationshipsByPartyId.forEach(p2pRel -> {
+            // Your existing logic here for processing related parties
+
+            var childHierarchyParty = mapToP2PHierarchyParty(child);
+            p2pHierarchyPartyQueue.add(childHierarchyParty);
+        });
+    });
+}
+
+
+
+
+-------------------------------------------
 private TargetParty mapToTargetParty(Party targetPartyData) {
     // Ensure that targetPartyData and its methods return non-null values
     var relatedPartiesMap = Optional.ofNullable(targetPartyData.getRelatedPartyList())
