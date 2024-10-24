@@ -2,6 +2,63 @@
 import java.util.*;
 import java.util.stream.Collectors;
 
+// Generic method to process relationships
+private TreeSet<P2PRelationship> processRelationships(
+        List<P2PRelationship> oldRelationships, 
+        List<P2PRelationship> newRelationships) {
+
+    // Create a TreeSet with a comparator that defines the sorting logic
+    // Replace `getRelationshipTypeId()` with whatever field you want to use for sorting
+    Comparator<P2PRelationship> comparator = Comparator.comparing(
+        relationship -> relationship.getRelationshipDetails()
+                                    .stream()
+                                    .map(RelationshipDetail::getRelationshipTypeId)
+                                    .collect(Collectors.joining()));  // Example, you can adjust this
+
+    TreeSet<P2PRelationship> relationshipSet = new TreeSet<>(comparator);
+
+    // Filter out duplicates by checking if newRelationships already contains the relationship
+    relationshipSet.addAll(oldRelationships.stream()
+        .filter(relationship -> !newRelationships.contains(relationship))
+        .collect(Collectors.toList()));
+
+    return relationshipSet;
+}
+
+// Main logic for combining ownership and non-ownership relationships
+public List<P2PVisualization> getP2PVisualizationObj(List<P2PVisualization> visualizationParties) {
+    return new ArrayList<>(visualizationParties.stream()
+        .collect(Collectors.toMap(P2PVisualization::getPartyId,
+            Function.identity(),
+            (oldRel, newRel) -> {
+                // Process ownership relationships
+                TreeSet<P2PRelationship> ownerRelToAdd = processRelationships(
+                    oldRel.getOwnershipRelationships(), 
+                    newRel.getOwnershipRelationships());
+
+                // Add sorted ownership relationships to newRel
+                newRel.getOwnershipRelationships().addAll(ownerRelToAdd);
+
+                // Process non-ownership relationships
+                TreeSet<P2PRelationship> nonOwnerRelToAdd = processRelationships(
+                    oldRel.getNonOwnershipRelationships(),
+                    newRel.getNonOwnershipRelationships());
+
+                // Add sorted non-ownership relationships to newRel
+                newRel.getNonOwnershipRelationships().addAll(nonOwnerRelToAdd);
+
+                return newRel;
+            },
+            LinkedHashMap::new)) // Maintain insertion order
+        .values());
+}
+
+
+
+-------------------+----
+import java.util.*;
+import java.util.stream.Collectors;
+
 // Generic method to process relationships in Java 11 standards
 private TreeSet<P2PRelationship> processRelationships(
         List<P2PRelationship> oldRelationships, 
