@@ -1,3 +1,60 @@
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class P2PVisualizationService {
+
+    public List<P2PVisualization> processP2PVisualizationParties(List<P2PVisualization> p2pVisualizationParties) {
+        // Step 1: Sort to push entries with non-empty nonOwnershipRelationships to the bottom
+        List<P2PVisualization> sortedParties = p2pVisualizationParties.stream()
+            .sorted(Comparator.comparing(party -> party.getNonOwnershipRelationships() == null || party.getNonOwnershipRelationships().isEmpty()))
+            .collect(Collectors.toList());
+
+        // Step 2: Split entries with multiple parentPartyIds in nonOwnershipRelationships
+        List<P2PVisualization> result = new ArrayList<>();
+        
+        for (P2PVisualization party : sortedParties) {
+            List<P2PRelationship> nonOwnershipRelationships = party.getNonOwnershipRelationships();
+
+            // If nonOwnershipRelationships is null or has only one unique parentPartyId, add it directly to the result
+            if (nonOwnershipRelationships == null || nonOwnershipRelationships.stream().map(P2PRelationship::getParentPartyId).distinct().count() <= 1) {
+                result.add(party);
+            } else {
+                // Split into separate entries based on unique parentPartyId in nonOwnershipRelationships
+                nonOwnershipRelationships.stream()
+                    .collect(Collectors.groupingBy(P2PRelationship::getParentPartyId))
+                    .forEach((uniqueParentPartyId, relationships) -> {
+                        // Create a new P2PVisualization entry for each unique parentPartyId group
+                        P2PVisualization splitParty = P2PVisualization.builder()
+                            .partyId(party.getPartyId())            // Keep the original partyId
+                            .parentId(uniqueParentPartyId)          // Replace parentId with the unique parentPartyId
+                            .partyName(party.getPartyName())
+                            .validationStatus(party.getValidationStatus())
+                            .countryOfOrganization(party.getCountryOfOrganization())
+                            .legalForm(party.getLegalForm())
+                            .countryOfDomicile(party.getCountryOfDomicile())
+                            .dateOfBirth(party.getDateOfBirth())
+                            .dateOfIncorporation(party.getDateOfIncorporation())
+                            .countrySpecificIdentifiers(party.getCountrySpecificIdentifiers())
+                            .pepIndicator(party.getPepIndicator())
+                            .effectivePercentageValueOfOwnership(party.getEffectivePercentageValueOfOwnership())
+                            .ownershipRelationships(party.getOwnershipRelationships())
+                            .nonOwnershipRelationships(relationships) // Set only the relationships with the same parentPartyId
+                            .build();
+                        result.add(splitParty);
+                    });
+            }
+        }
+
+        return result;
+    }
+}
+
+
+
+--------------------------------------
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
