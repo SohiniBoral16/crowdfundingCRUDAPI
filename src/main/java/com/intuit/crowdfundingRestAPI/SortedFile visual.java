@@ -1,4 +1,39 @@
 public List<P2PVisualization> processAndSortP2PVisualizations(List<P2PVisualization> p2pVisualizationParties) {
+    return p2pVisualizationParties.stream()
+        .flatMap(party -> Optional.ofNullable(party.getNonOwnershipRelationships())
+            .filter(nonOwnerships -> !nonOwnerships.isEmpty())
+            .map(nonOwnerships -> nonOwnerships.stream()
+                .flatMap(nonOwnership -> nonOwnership.getRelationshipDetails().stream()
+                    .map(relationshipDetail -> {
+                        // Build a new P2PRelationship with only this single relationship detail
+                        P2PRelationship splitNonOwnership = P2PRelationship.builder()
+                            .parentPartyId(nonOwnership.getParentPartyId())
+                            .effectivePercentageValueOfOwnership(nonOwnership.getEffectivePercentageValueOfOwnership())
+                            .relationshipDetails(Collections.singletonList(relationshipDetail))
+                            .build();
+
+                        // Build a new P2PVisualization instance with updated parentId and split non-ownership relationship
+                        return P2PVisualization.builder()
+                            .partyId(party.getPartyId())
+                            .parentId(nonOwnership.getParentPartyId()) // Set parentId to parentPartyId of nonOwnership
+                            .partyName(party.getPartyName())
+                            .validationStatus(party.getValidationStatus())
+                            .countryOfOrganization(party.getCountryOfOrganization())
+                            .legalForm(party.getLegalForm())
+                            .legalName(party.getLegalName())
+                            .pepIndicator(party.getPepIndicator())
+                            .ownershipRelationships(party.getOwnershipRelationships()) // Retain original ownership relationships
+                            .nonOwnershipRelationships(Collections.singletonList(splitNonOwnership)) // Only this non-ownership relationship
+                            .build();
+                    })))
+            .orElse(Stream.of(party))) // If no nonOwnershipRelationships, keep the original party
+        .collect(Collectors.toList());
+}
+
+
+
+
+public List<P2PVisualization> processAndSortP2PVisualizations(List<P2PVisualization> p2pVisualizationParties) {
     // Step 1: Separate each nonOwnershipRelationship into its own P2PVisualization instance
     List<P2PVisualization> separatedList = p2pVisualizationParties.stream()
         .flatMap(party -> Optional.ofNullable(party.getNonOwnershipRelationships())
