@@ -1,262 +1,29 @@
-
-
 import java.util.*;
 import java.util.stream.Collectors;
 
-// Main logic for combining ownership and non-ownership relationships
-public List<P2PVisualization> getP2PVisualizationObj(List<P2PVisualization> visualizationParties) {
-    return new ArrayList<>(visualizationParties.stream()
-        .collect(Collectors.toMap(P2PVisualization::getPartyId,
-            Function.identity(),
-            (oldRel, newRel) -> {
-                // Using SortedSet (TreeSet) for ownership relationships to ensure sorting and uniqueness
-                SortedSet<P2PRelationship> ownerRelToAdd = new TreeSet<>();
-                
-                // Add all old ownership relationships that are not in new ownership relationships
-                ownerRelToAdd.addAll(oldRel.getOwnershipRelationships().stream()
-                    .filter(relationship -> !newRel.getOwnershipRelationships().contains(relationship))
-                    .collect(Collectors.toList()));
+public class P2PVisualizationService {
 
-                // Add sorted ownership relationships to newRel
-                newRel.getOwnershipRelationships().addAll(ownerRelToAdd);
+    public List<P2PVisualization> sortP2PVisualizationParties(List<P2PVisualization> p2pVisualizationParties) {
+        List<P2PVisualization> sortedParties = new ArrayList<>();
 
-                // Using SortedSet (TreeSet) for non-ownership relationships to ensure sorting and uniqueness
-                SortedSet<P2PRelationship> nonOwnerRelToAdd = new TreeSet<>();
-                
-                // Add all old non-ownership relationships that are not in new non-ownership relationships
-                nonOwnerRelToAdd.addAll(oldRel.getNonOwnershipRelationships().stream()
-                    .filter(relationship -> !newRel.getNonOwnershipRelationships().contains(relationship))
-                    .collect(Collectors.toList()));
+        for (P2PVisualization party : p2pVisualizationParties) {
+            // Sort nonOwnershipRelationships and move it to the end if present
+            if (party.getNonOwnershipRelationships() != null && !party.getNonOwnershipRelationships().isEmpty()) {
+                SortedSet<P2PRelationship> sortedNonOwnership = new TreeSet<>(Comparator.comparing(P2PRelationship::getRelationshipTypeId));
+                sortedNonOwnership.addAll(party.getNonOwnershipRelationships());
+                party.setNonOwnershipRelationships(new ArrayList<>(sortedNonOwnership));
+            }
 
-                // Add sorted non-ownership relationships to newRel
-                newRel.getNonOwnershipRelationships().addAll(nonOwnerRelToAdd);
+            // Sort ownershipRelationships by relationshipTypeId
+            if (party.getOwnershipRelationships() != null && !party.getOwnershipRelationships().isEmpty()) {
+                party.setOwnershipRelationships(party.getOwnershipRelationships().stream()
+                        .sorted(Comparator.comparing(P2PRelationship::getRelationshipTypeId))
+                        .collect(Collectors.toList()));
+            }
 
-                return newRel;
-            },
-            LinkedHashMap::new)) // Maintain insertion order
-        .values());
+            sortedParties.add(party);
+        }
+
+        return sortedParties;
+    }
 }
-
-
-
-var p2pVisualizationObj = new ArrayList<>(visualizationParties.stream()
-    .collect(Collectors.toMap(P2PVisualization::getPartyId,
-        Function.identity(),
-        (oldRel, newRel) -> {
-            // For ownership relationships, use SortedSet (TreeSet) for sorting automatically
-            SortedSet<P2PRelationship> ownerRelToAdd = new TreeSet<>();
-            
-            // Add old relationships that are not already in newRelationships
-            ownerRelToAdd.addAll(oldRel.getOwnershipRelationships().stream()
-                .filter(relationship -> !newRel.getOwnershipRelationships().contains(relationship))
-                .collect(Collectors.toList()));
-            
-            // Add sorted ownership relationships to newRel
-            newRel.getOwnershipRelationships().addAll(ownerRelToAdd);
-
-            // For non-ownership relationships, also use SortedSet (TreeSet) for sorting automatically
-            SortedSet<P2PRelationship> nonOwnerRelToAdd = new TreeSet<>();
-            
-            // Add old non-ownership relationships that are not already in newRelationships
-            nonOwnerRelToAdd.addAll(oldRel.getNonOwnershipRelationships().stream()
-                .filter(relationship -> !newRel.getNonOwnershipRelationships().contains(relationship))
-                .collect(Collectors.toList()));
-            
-            // Add sorted non-ownership relationships to newRel
-            newRel.getNonOwnershipRelationships().addAll(nonOwnerRelToAdd);
-
-            return newRel;
-        },
-        LinkedHashMap::new)) // Maintain insertion order
-    .values());
-
-// Return the reduced p2pVisualizationObj
-return p2pVisualizationObj;
-
-
-
-----------------
-import java.util.*;
-import java.util.stream.Collectors;
-
-// Generic method to process relationships
-private TreeSet<P2PRelationship> processRelationships(
-        List<P2PRelationship> oldRelationships, 
-        List<P2PRelationship> newRelationships) {
-
-    // Create a TreeSet with a comparator that defines the sorting logic
-    // Replace `getRelationshipTypeId()` with whatever field you want to use for sorting
-    Comparator<P2PRelationship> comparator = Comparator.comparing(
-        relationship -> relationship.getRelationshipDetails()
-                                    .stream()
-                                    .map(RelationshipDetail::getRelationshipTypeId)
-                                    .collect(Collectors.joining()));  // Example, you can adjust this
-
-    TreeSet<P2PRelationship> relationshipSet = new TreeSet<>(comparator);
-
-    // Filter out duplicates by checking if newRelationships already contains the relationship
-    relationshipSet.addAll(oldRelationships.stream()
-        .filter(relationship -> !newRelationships.contains(relationship))
-        .collect(Collectors.toList()));
-
-    return relationshipSet;
-}
-
-// Main logic for combining ownership and non-ownership relationships
-public List<P2PVisualization> getP2PVisualizationObj(List<P2PVisualization> visualizationParties) {
-    return new ArrayList<>(visualizationParties.stream()
-        .collect(Collectors.toMap(P2PVisualization::getPartyId,
-            Function.identity(),
-            (oldRel, newRel) -> {
-                // Process ownership relationships
-                TreeSet<P2PRelationship> ownerRelToAdd = processRelationships(
-                    oldRel.getOwnershipRelationships(), 
-                    newRel.getOwnershipRelationships());
-
-                // Add sorted ownership relationships to newRel
-                newRel.getOwnershipRelationships().addAll(ownerRelToAdd);
-
-                // Process non-ownership relationships
-                TreeSet<P2PRelationship> nonOwnerRelToAdd = processRelationships(
-                    oldRel.getNonOwnershipRelationships(),
-                    newRel.getNonOwnershipRelationships());
-
-                // Add sorted non-ownership relationships to newRel
-                newRel.getNonOwnershipRelationships().addAll(nonOwnerRelToAdd);
-
-                return newRel;
-            },
-            LinkedHashMap::new)) // Maintain insertion order
-        .values());
-}
-
-
-
--------------------+----
-import java.util.*;
-import java.util.stream.Collectors;
-
-// Generic method to process relationships in Java 11 standards
-private TreeSet<P2PRelationship> processRelationships(
-        List<P2PRelationship> oldRelationships, 
-        List<P2PRelationship> newRelationships) {
-
-    // Create a TreeSet with a comparator to sort relationships based on multiple relationship details
-    return oldRelationships.stream()
-        .filter(relationship -> !newRelationships.contains(relationship)) // Filter out duplicates
-        .collect(Collectors.toCollection(() -> 
-            new TreeSet<>((rel1, rel2) -> {
-                // Compare relationship details dynamically, traverse all available details
-                List<RelationshipDetail> rel1Details = rel1.getRelationshipDetails();
-                List<RelationshipDetail> rel2Details = rel2.getRelationshipDetails();
-                
-                // Traverse through all the available details for comparison
-                for (int i = 0; i < Math.min(rel1Details.size(), rel2Details.size()); i++) {
-                    int result = rel1Details.get(i).getRelationshipTypeId()
-                            .compareTo(rel2Details.get(i).getRelationshipTypeId());
-                    
-                    // If the current comparison yields a result, return it
-                    if (result != 0) {
-                        return result;
-                    }
-                }
-
-                // If all compared details are equal, relationships are considered equal
-                return 0;
-            })
-        ));
-}
-
-// Example usage within the main logic to combine ownership and non-ownership relationships
-public List<P2PVisualization> getP2PVisualizationObj(List<P2PVisualization> visualizationParties) {
-    return new ArrayList<>(visualizationParties.stream()
-        .collect(Collectors.toMap(P2PVisualization::getPartyId,
-            Function.identity(),
-            (oldRel, newRel) -> {
-                // Process ownership relationships
-                TreeSet<P2PRelationship> ownerRelToAdd = processRelationships(
-                    oldRel.getOwnershipRelationships(), 
-                    newRel.getOwnershipRelationships());
-
-                // Add sorted ownership relationships to newRel
-                newRel.getOwnershipRelationships().addAll(ownerRelToAdd);
-
-                // Process non-ownership relationships
-                TreeSet<P2PRelationship> nonOwnerRelToAdd = processRelationships(
-                    oldRel.getNonOwnershipRelationships(),
-                    newRel.getNonOwnershipRelationships());
-
-                // Add sorted non-ownership relationships to newRel
-                newRel.getNonOwnershipRelationships().addAll(nonOwnerRelToAdd);
-
-                return newRel;
-            },
-            LinkedHashMap::new)) // Maintain insertion order
-        .values());
-}
-
-
-
----------------------------
-// Reduce P2PVisualization objects into single object for a given party by adding different P2PRelationships
-var p2pVisualizationObj = new ArrayList<>(visualizationParties.stream()
-    .collect(Collectors.toMap(P2PVisualization::getPartyId,
-        Function.identity(),
-        (oldRel, newRel) -> {
-            // For ownership relationships, keeping the original list-based logic
-            List<P2PRelationship> ownerRelToAdd = oldRel.getOwnershipRelationships().stream()
-                .filter(relationship -> !newRel.getOwnershipRelationships().contains(relationship))
-                .collect(Collectors.toList());
-
-            newRel.getOwnershipRelationships().addAll(ownerRelToAdd);
-
-            // For non-ownership relationships, switching to TreeSet to maintain sorted order
-            TreeSet<P2PRelationship> nonOwnerRelToAdd = new TreeSet<>(Comparator.comparing(P2PRelationship::getSomeSortingField)); // Replace with the field to sort by
-            nonOwnerRelToAdd.addAll(oldRel.getNonOwnershipRelationships().stream()
-                .filter(relationship -> !newRel.getNonOwnershipRelationships().contains(relationship))
-                .collect(Collectors.toList()));
-
-            // Add non-ownership relationships to the newRel using TreeSet to ensure sorting
-            newRel.getNonOwnershipRelationships().addAll(nonOwnerRelToAdd);
-
-            return newRel;
-        },
-        LinkedHashMap::new)) // Maintain insertion order
-    .values());
-
-// Return the reduced p2pVisualizationObj
-return p2pVisualizationObj;
-
-
-
-
-
-// Reduce P2PVisualization objects into a single object for a given party, adding different P2PRelationships
-var p2pVisualizationObj = new ArrayList<>(visualizationParties.stream()
-    .collect(Collectors.toMap(P2PVisualization::getPartyId,
-        Function.identity(),
-        (oldRel, newRel) -> {
-            // Use TreeSet instead of List to maintain sorted order
-            TreeSet<P2PRelationship> ownerRelToAdd = new TreeSet<>(Comparator.comparing(P2PRelationship::getSomeSortingField)); // Replace with the field to sort by
-            ownerRelToAdd.addAll(oldRel.getOwnershipRelationships());
-            ownerRelToAdd.addAll(newRel.getOwnershipRelationships());
-            
-            // For non-ownership relationships
-            TreeSet<P2PRelationship> nonOwnerRelToAdd = new TreeSet<>(Comparator.comparing(P2PRelationship::getSomeSortingField)); // Replace with the field to sort by
-            nonOwnerRelToAdd.addAll(oldRel.getNonOwnershipRelationships());
-            nonOwnerRelToAdd.addAll(newRel.getNonOwnershipRelationships());
-
-            // Update relationships in newRel
-            newRel.getOwnershipRelationships().clear();
-            newRel.getOwnershipRelationships().addAll(ownerRelToAdd);
-
-            newRel.getNonOwnershipRelationships().clear();
-            newRel.getNonOwnershipRelationships().addAll(nonOwnerRelToAdd);
-
-            return newRel;
-        },
-        LinkedHashMap::new)) // Maintain insertion order
-    .values());
-
-// Return the reduced p2pVisualizationObj
-return p2pVisualizationObj;
