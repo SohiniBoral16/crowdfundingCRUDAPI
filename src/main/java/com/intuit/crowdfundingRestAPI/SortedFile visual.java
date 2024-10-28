@@ -1,4 +1,33 @@
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+public class P2PVisualizationService {
+
+    public List<P2PVisualization> sortP2PVisualizationParties(List<P2PVisualization> p2pVisualizationParties) {
+        for (P2PVisualization party : p2pVisualizationParties) {
+            // Sort nonOwnershipRelationships in place if present
+            if (party.getNonOwnershipRelationships() != null && !party.getNonOwnershipRelationships().isEmpty()) {
+                SortedSet<RelationshipDetail> sortedNonOwnership = new TreeSet<>(party.getNonOwnershipRelationships());
+                
+                // Clear the list and add back the sorted elements to maintain final reference
+                party.getNonOwnershipRelationships().clear();
+                party.getNonOwnershipRelationships().addAll(sortedNonOwnership);
+            }
+        }
+        return p2pVisualizationParties;
+    }
+}
+
+
+SortedSet<RelationshipDetail> sortedNonOwnership = new TreeSet<>(Comparator.comparing(RelationshipDetail::getRelationshipTypeId));
+sortedNonOwnership.addAll(party.getNonOwnershipRelationships());
+
+
+
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
