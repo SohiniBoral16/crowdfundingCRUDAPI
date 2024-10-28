@@ -1,4 +1,75 @@
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
+public class P2PVisualizationService {
+
+    public List<P2PVisualization> processP2PVisualizationParties(List<P2PVisualization> p2pVisualizationParties) {
+        return p2pVisualizationParties.stream()
+            .flatMap(party -> {
+                List<P2PRelationship> nonOwnershipRelationships = party.getNonOwnershipRelationships();
+
+                // Step 1: Sort nonOwnershipRelationships by `parentPartyId` if the list is not empty
+                List<P2PRelationship> sortedNonOwnershipRelationships = (nonOwnershipRelationships != null)
+                    ? nonOwnershipRelationships.stream()
+                        .sorted(Comparator.comparing(P2PRelationship::getParentPartyId))
+                        .collect(Collectors.toList())
+                    : new ArrayList<>();
+
+                // Step 2: Check for different `parentPartyId`s and split into separate P2PVisualization entries if needed
+                if (sortedNonOwnershipRelationships.stream().map(P2PRelationship::getParentPartyId).distinct().count() > 1) {
+                    // Group by `parentPartyId` and create separate `P2PVisualization` entries for each group
+                    return sortedNonOwnershipRelationships.stream()
+                        .collect(Collectors.groupingBy(P2PRelationship::getParentPartyId))
+                        .values()
+                        .stream()
+                        .map(groupedRelationships -> P2PVisualization.builder()
+                            .partyId(party.getPartyId())
+                            .parentId(party.getParentId())
+                            .partyName(party.getPartyName())
+                            .validationStatus(party.getValidationStatus())
+                            .countryOfOrganization(party.getCountryOfOrganization())
+                            .legalForm(party.getLegalForm())
+                            .countryOfDomicile(party.getCountryOfDomicile())
+                            .dateOfBirth(party.getDateOfBirth())
+                            .dateOfIncorporation(party.getDateOfIncorporation())
+                            .countrySpecificIdentifiers(party.getCountrySpecificIdentifiers())
+                            .pepIndicator(party.getPepIndicator())
+                            .effectivePercentageValueOfOwnership(party.getEffectivePercentageValueOfOwnership())
+                            .ownershipRelationships(party.getOwnershipRelationships())
+                            .nonOwnershipRelationships(groupedRelationships)  // Assign each group of relationships
+                            .build()
+                        );
+                } else {
+                    // If there are no different `parentPartyId`s, return the original party with sorted nonOwnershipRelationships
+                    return List.of(P2PVisualization.builder()
+                        .partyId(party.getPartyId())
+                        .parentId(party.getParentId())
+                        .partyName(party.getPartyName())
+                        .validationStatus(party.getValidationStatus())
+                        .countryOfOrganization(party.getCountryOfOrganization())
+                        .legalForm(party.getLegalForm())
+                        .countryOfDomicile(party.getCountryOfDomicile())
+                        .dateOfBirth(party.getDateOfBirth())
+                        .dateOfIncorporation(party.getDateOfIncorporation())
+                        .countrySpecificIdentifiers(party.getCountrySpecificIdentifiers())
+                        .pepIndicator(party.getPepIndicator())
+                        .effectivePercentageValueOfOwnership(party.getEffectivePercentageValueOfOwnership())
+                        .ownershipRelationships(party.getOwnershipRelationships())
+                        .nonOwnershipRelationships(sortedNonOwnershipRelationships)  // Assign sorted relationships
+                        .build()
+                    ).stream();
+                }
+            })
+            .collect(Collectors.toList());
+    }
+}
+
+
+
+
+----------------------------
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
