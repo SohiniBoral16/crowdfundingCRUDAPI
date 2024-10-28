@@ -1,4 +1,55 @@
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public class P2PVisualizationService {
+
+    public List<P2PVisualization> reorderAndSortByParentAndRelationshipTypeId(List<P2PVisualization> p2pVisualizationParties) {
+        return p2pVisualizationParties.stream()
+            // Step 1: Move entries with non-empty nonOwnershipRelationships to the bottom
+            .sorted(Comparator.comparing(
+                party -> Optional.ofNullable(party.getNonOwnershipRelationships())
+                    .map(list -> !list.isEmpty())
+                    .orElse(false)
+            ))
+            // Step 2: For entries with non-empty nonOwnershipRelationships, sort within them by outside parentId and relationshipTypeId
+            .map(party -> {
+                List<P2PRelationship> sortedNonOwnershipRelationships = Optional.ofNullable(party.getNonOwnershipRelationships())
+                    .map(list -> list.stream()
+                        .sorted(Comparator.comparing((P2PRelationship rel) -> party.getParentId()) // Sort by outside parentId
+                                .thenComparing(rel -> rel.getRelationshipDetails().stream()
+                                    .findFirst()
+                                    .map(RelationshipDetail::getRelationshipTypeId)
+                                    .orElse(""))) // Then by relationshipTypeId within relationshipDetails
+                        .collect(Collectors.toList()))
+                    .orElse(null);
+
+                // Return a new P2PVisualization instance with sorted nonOwnershipRelationships
+                return P2PVisualization.builder()
+                    .partyId(party.getPartyId())
+                    .parentId(party.getParentId())
+                    .partyName(party.getPartyName())
+                    .validationStatus(party.getValidationStatus())
+                    .countryOfOrganization(party.getCountryOfOrganization())
+                    .legalForm(party.getLegalForm())
+                    .countryOfDomicile(party.getCountryOfDomicile())
+                    .dateOfBirth(party.getDateOfBirth())
+                    .dateOfIncorporation(party.getDateOfIncorporation())
+                    .countrySpecificIdentifiers(party.getCountrySpecificIdentifiers())
+                    .pepIndicator(party.getPepIndicator())
+                    .effectivePercentageValueOfOwnership(party.getEffectivePercentageValueOfOwnership())
+                    .ownershipRelationships(party.getOwnershipRelationships())
+                    .nonOwnershipRelationships(sortedNonOwnershipRelationships)
+                    .build();
+            })
+            .collect(Collectors.toList());
+    }
+}
+
+
+-----------------------+---------------
 
 import java.util.Comparator;
 import java.util.List;
