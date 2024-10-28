@@ -1,3 +1,50 @@
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class P2PVisualizationService {
+
+    public List<P2PVisualization> processP2PVisualizationParties(List<P2PVisualization> p2pVisualizationParties) {
+        return p2pVisualizationParties.stream()
+            .flatMap(party -> {
+                List<P2PRelationship> nonOwnershipRelationships = party.getNonOwnershipRelationships();
+
+                // Step 1: Sort nonOwnershipRelationships by `parentPartyId`
+                List<P2PRelationship> sortedNonOwnershipRelationships = (nonOwnershipRelationships != null)
+                    ? nonOwnershipRelationships.stream()
+                        .sorted(Comparator.comparing(P2PRelationship::getParentPartyId))
+                        .collect(Collectors.toList())
+                    : new ArrayList<>();
+
+                // Step 2: Split each relationship based on `parentPartyId` to create distinct `P2PVisualization` entries
+                return sortedNonOwnershipRelationships.stream()
+                    .map(singleRelationship -> P2PVisualization.builder()
+                        .partyId(party.getPartyId())
+                        .parentId(party.getParentId())
+                        .partyName(party.getPartyName())
+                        .validationStatus(party.getValidationStatus())
+                        .countryOfOrganization(party.getCountryOfOrganization())
+                        .legalForm(party.getLegalForm())
+                        .countryOfDomicile(party.getCountryOfDomicile())
+                        .dateOfBirth(party.getDateOfBirth())
+                        .dateOfIncorporation(party.getDateOfIncorporation())
+                        .countrySpecificIdentifiers(party.getCountrySpecificIdentifiers())
+                        .pepIndicator(party.getPepIndicator())
+                        .effectivePercentageValueOfOwnership(party.getEffectivePercentageValueOfOwnership())
+                        .ownershipRelationships(party.getOwnershipRelationships())
+                        .nonOwnershipRelationships(List.of(singleRelationship))  // Only one relationship per entry
+                        .build()
+                    );
+            })
+            .collect(Collectors.toList());
+    }
+}
+
+
+
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
