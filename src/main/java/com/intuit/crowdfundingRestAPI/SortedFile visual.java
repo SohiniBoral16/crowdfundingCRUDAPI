@@ -6,6 +6,34 @@ import java.util.stream.Collectors;
 public class P2PVisualizationService {
 
     public List<P2PVisualization> sortP2PVisualizationParties(List<P2PVisualization> p2pVisualizationParties) {
+        // Step 1: Sort `p2pVisualizationParties` to move entries with non-empty `nonOwnershipRelationships` to the end
+        List<P2PVisualization> sortedParties = p2pVisualizationParties.stream()
+                .sorted(Comparator.comparing(party -> !(party.getNonOwnershipRelationships() == null || party.getNonOwnershipRelationships().isEmpty())))
+                .collect(Collectors.toList());
+
+        // Step 2: For each `P2PVisualization` entry, sort `ownershipRelationships` by `relationshipTypeId`
+        for (P2PVisualization party : sortedParties) {
+            if (party.getOwnershipRelationships() != null && !party.getOwnershipRelationships().isEmpty()) {
+                party.getOwnershipRelationships().sort(Comparator.comparing(RelationshipDetail::getRelationshipTypeId));
+            }
+        }
+
+        return sortedParties;
+    }
+}
+
+
+
+
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class P2PVisualizationService {
+
+    public List<P2PVisualization> sortP2PVisualizationParties(List<P2PVisualization> p2pVisualizationParties) {
         // Step 1: Sort each `nonOwnershipRelationships` list by `relationshipTypeId` if present
         for (P2PVisualization party : p2pVisualizationParties) {
             if (party.getNonOwnershipRelationships() != null && !party.getNonOwnershipRelationships().isEmpty()) {
