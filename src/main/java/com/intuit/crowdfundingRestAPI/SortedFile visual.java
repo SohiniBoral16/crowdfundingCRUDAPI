@@ -1,3 +1,39 @@
+
+public List<P2PVisualization> filterNonOwnershipRelationships(List<P2PVisualization> p2pVisualizationParties, String requiredRelationshipTypeId) {
+    return p2pVisualizationParties.stream()
+        // Filter out parties that only have non-ownership relationships
+        .filter(party -> party.getNonOwnershipRelationships() != null && !party.getNonOwnershipRelationships().isEmpty()
+            && (party.getOwnershipRelationships() == null || party.getOwnershipRelationships().isEmpty()))
+        // Further filter non-ownership relationships by relationshipTypeId
+        .map(party -> {
+            List<P2PRelationship> filteredNonOwnerships = party.getNonOwnershipRelationships().stream()
+                .filter(nonOwnership -> nonOwnership.getRelationshipDetails() != null)
+                .filter(nonOwnership -> nonOwnership.getRelationshipDetails().stream()
+                    .anyMatch(detail -> requiredRelationshipTypeId.equals(detail.getRelationshipTypeId())))
+                .collect(Collectors.toList());
+
+            // Build a new P2PVisualization instance with the filtered non-ownership relationships
+            return P2PVisualization.builder()
+                .partyId(party.getPartyId())
+                .parentId(party.getParentId())
+                .partyName(party.getPartyName())
+                .validationStatus(party.getValidationStatus())
+                .countryOfOrganization(party.getCountryOfOrganization())
+                .legalForm(party.getLegalForm())
+                .legalName(party.getLegalName())
+                .pepIndicator(party.getPepIndicator())
+                .ownershipRelationships(party.getOwnershipRelationships())
+                .nonOwnershipRelationships(filteredNonOwnerships) // Set the filtered non-ownership relationships
+                .build();
+        })
+        // Ensure we return only parties with at least one matching relationship in nonOwnershipRelationships
+        .filter(party -> !party.getNonOwnershipRelationships().isEmpty())
+        .collect(Collectors.toList());
+}
+
+
+
+
 public List<P2PVisualization> filterNonOwnershipRelationships(List<P2PVisualization> p2pVisualizationParties, String requiredRelationshipTypeId) {
     return p2pVisualizationParties.stream()
         // Filter out parties that only have non-ownership relationships
