@@ -1,3 +1,31 @@
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class P2PVisualizationService {
+
+    public List<P2PVisualization> sortP2PVisualizationParties(List<P2PVisualization> p2pVisualizationParties) {
+        // Step 1: Sort each `nonOwnershipRelationships` list by `relationshipTypeId` if present
+        for (P2PVisualization party : p2pVisualizationParties) {
+            if (party.getNonOwnershipRelationships() != null && !party.getNonOwnershipRelationships().isEmpty()) {
+                party.getNonOwnershipRelationships().sort(Comparator.comparing(RelationshipDetail::getRelationshipTypeId));
+            }
+        }
+
+        // Step 2: Sort the `p2pVisualizationParties` list based on the presence of `nonOwnershipRelationships`
+        List<P2PVisualization> sortedParties = p2pVisualizationParties.stream()
+                .sorted(Comparator.comparing(party -> party.getNonOwnershipRelationships() == null || party.getNonOwnershipRelationships().isEmpty()))
+                .collect(Collectors.toList());
+
+        return sortedParties;
+    }
+}
+
+
+
+
+
 
 import java.util.ArrayList;
 import java.util.List;
