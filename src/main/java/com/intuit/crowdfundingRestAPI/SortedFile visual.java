@@ -1,4 +1,40 @@
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class P2PVisualizationService {
+
+    public List<P2PVisualization> sortAndSplitNonOwnershipRelationships(List<P2PVisualization> p2pVisualizationParties) {
+        for (P2PVisualization party : p2pVisualizationParties) {
+            // Step 1: Split `nonOwnershipRelationships` if multiple relationships are present
+            List<RelationshipDetail> nonOwnershipRelationships = party.getNonOwnershipRelationships();
+            if (nonOwnershipRelationships != null && nonOwnershipRelationships.size() > 1) {
+                List<RelationshipDetail> splitRelationships = new ArrayList<>(nonOwnershipRelationships);
+                party.setNonOwnershipRelationships(splitRelationships);  // Assuming you have a setter
+            }
+
+            // Step 2: Sort `nonOwnershipRelationships` by `parentId + relationshipTypeId`
+            if (party.getNonOwnershipRelationships() != null) {
+                party.getNonOwnershipRelationships().sort(Comparator.comparing(
+                        rel -> (party.getParentId() + rel.getRelationshipTypeId())));
+            }
+        }
+
+        return p2pVisualizationParties;
+    }
+}
+
+
+
+
+
+
+
+
+
+
 import lombok.Data;
 import lombok.Builder;
 
