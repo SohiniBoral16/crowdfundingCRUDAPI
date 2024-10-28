@@ -1,3 +1,38 @@
+
+import lombok.Data;
+import lombok.Builder;
+
+@Data
+@Builder
+public class RelationshipDetail implements Comparator<RelationshipDetail> {
+    private String relationshipTypeId;
+    private String relationshipTypeName;
+    private RelationshipAttributeDetails relationshipAttributeDetails;
+
+    @Override
+    public int compare(RelationshipDetail o1, RelationshipDetail o2) {
+        return o1.getRelationshipTypeId().compareTo(o2.getRelationshipTypeId());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RelationshipDetail that = (RelationshipDetail) o;
+        return Objects.equals(relationshipTypeId, that.relationshipTypeId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(relationshipTypeId);
+    }
+}
+
+
+
+
+
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
