@@ -8,6 +8,48 @@ public class P2PVisualizationService {
 
     public List<P2PVisualization> sortAndSplitNonOwnershipRelationships(List<P2PVisualization> p2pVisualizationParties) {
         for (P2PVisualization party : p2pVisualizationParties) {
+            List<RelationshipDetail> nonOwnershipRelationships = party.getNonOwnershipRelationships();
+
+            // Step 1: Check for different `parentId`s in `nonOwnershipRelationships`
+            if (nonOwnershipRelationships != null && !nonOwnershipRelationships.isEmpty()) {
+                // Group relationships by `parentId`
+                List<RelationshipDetail> splitRelationships = new ArrayList<>();
+                
+                nonOwnershipRelationships.stream()
+                    .collect(Collectors.groupingBy(RelationshipDetail::getParentPartyId))
+                    .forEach((parentId, groupedRelationships) -> splitRelationships.addAll(groupedRelationships));
+
+                // Replace the original list with the split relationships if they have different parentIds
+                if (splitRelationships.size() > nonOwnershipRelationships.size()) {
+                    party.setNonOwnershipRelationships(splitRelationships);
+                }
+            }
+
+            // Step 2: Sort `nonOwnershipRelationships` by `parentId + relationshipTypeId`
+            if (party.getNonOwnershipRelationships() != null) {
+                party.getNonOwnershipRelationships().sort(
+                    Comparator.comparing(rel -> rel.getParentPartyId() + rel.getRelationshipTypeId())
+                );
+            }
+        }
+
+        return p2pVisualizationParties;
+    }
+}
+
+
+
+
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class P2PVisualizationService {
+
+    public List<P2PVisualization> sortAndSplitNonOwnershipRelationships(List<P2PVisualization> p2pVisualizationParties) {
+        for (P2PVisualization party : p2pVisualizationParties) {
             // Step 1: Split `nonOwnershipRelationships` if multiple relationships are present
             List<RelationshipDetail> nonOwnershipRelationships = party.getNonOwnershipRelationships();
             if (nonOwnershipRelationships != null && nonOwnershipRelationships.size() > 1) {
