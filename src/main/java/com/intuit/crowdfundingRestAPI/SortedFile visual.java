@@ -1,4 +1,24 @@
 
+return Stream.concat(
+        // First, add entries with ownership relationships or no non-ownership relationships
+        p2pVisualizationParties.stream()
+            .filter(party -> Optional.ofNullable(party.getNonOwnershipRelationships()).orElse(Collections.emptyList()).isEmpty()
+                || !Optional.ofNullable(party.getOwnershipRelationships()).orElse(Collections.emptyList()).isEmpty()),
+
+        // Then, add split entries at the end, sorted by the first relationshipTypeId in non-ownership relationships
+        splitList.stream()
+            .sorted(Comparator.comparing(
+                party -> party.getNonOwnershipRelationships().stream()
+                    .flatMap(nonOwnership -> nonOwnership.getRelationshipDetails().stream())
+                    .map(RelationshipDetail::getRelationshipTypeId)
+                    .sorted() // Sort by relationshipTypeId directly and access the first element
+                    .iterator().next() // Access the first element directly, assuming there's always data
+            ))
+    )
+    .collect(Collectors.toList());
+
+
+
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
