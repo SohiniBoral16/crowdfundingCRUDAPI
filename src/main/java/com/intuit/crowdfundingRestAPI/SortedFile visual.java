@@ -2,6 +2,42 @@
 return Stream.concat(
         // First, add parties without non-ownership relationships
         p2pVisualizations.stream()
+            .filter(party -> Objects.isNull(party.getNonOwnershipRelationships()) || party.getNonOwnershipRelationships().isEmpty()),
+        
+        // Then, add parties with non-ownership relationships, sorted by custom criteria
+        p2pVisualizations.stream()
+            .filter(party -> Objects.nonNull(party.getNonOwnershipRelationships()) && !party.getNonOwnershipRelationships().isEmpty())
+            .sorted(Comparator.comparing(
+                party -> {
+                    // Check if there are multiple relationships for the same parentPartyId
+                    boolean hasMultipleRelationships = party.getNonOwnershipRelationships().stream()
+                        .collect(Collectors.groupingBy(P2PRelationship::getParentPartyId))
+                        .values().stream()
+                        .anyMatch(relationships -> relationships.size() > 1);
+
+                    if (hasMultipleRelationships) {
+                        // Place entries with multiple relationships at the end
+                        return Integer.MAX_VALUE;
+                    } else {
+                        // For entries with a single relationship, directly map relationshipTypeId without findFirst
+                        return party.getNonOwnershipRelationships().stream()
+                            .flatMap(nonOwnership -> nonOwnership.getRelationshipDetails().stream())
+                            .map(RelationshipDetail::getRelationshipTypeId)
+                            .findAny().orElse(""); // Use findAny to avoid ordering concerns
+                    }
+                },
+                Comparator.nullsLast(Comparator.naturalOrder()) // Handle nulls by placing them at the end
+            ))
+    )
+    .collect(Collectors.toList());
+
+
+
+
+
+return Stream.concat(
+        // First, add parties without non-ownership relationships
+        p2pVisualizations.stream()
             .filter(party -> party.getNonOwnershipRelationships() == null || party.getNonOwnershipRelationships().isEmpty()),
         
         // Then, add parties with non-ownership relationships, sorted by custom criteria
