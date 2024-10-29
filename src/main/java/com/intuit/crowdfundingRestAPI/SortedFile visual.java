@@ -1,4 +1,40 @@
 
+return Stream.concat(
+        // First, add parties without non-ownership relationships
+        p2pVisualizations.stream()
+            .filter(party -> party.getNonOwnershipRelationships() == null || party.getNonOwnershipRelationships().isEmpty()),
+        
+        // Then, add parties with non-ownership relationships, sorted by custom criteria
+        p2pVisualizations.stream()
+            .filter(party -> party.getNonOwnershipRelationships() != null && !party.getNonOwnershipRelationships().isEmpty())
+            .sorted(Comparator.comparing(
+                party -> {
+                    // Check if there are multiple relationships for the same parentPartyId
+                    boolean hasMultipleRelationships = party.getNonOwnershipRelationships().stream()
+                        .collect(Collectors.groupingBy(P2PRelationship::getParentPartyId))
+                        .values().stream()
+                        .anyMatch(relationships -> relationships.size() > 1);
+
+                    if (hasMultipleRelationships) {
+                        // Place entries with multiple relationships at the end
+                        return Integer.MAX_VALUE;
+                    } else {
+                        // For entries with a single relationship, sort by relationshipTypeId
+                        return party.getNonOwnershipRelationships().stream()
+                            .flatMap(nonOwnership -> nonOwnership.getRelationshipDetails().stream())
+                            .map(RelationshipDetail::getRelationshipTypeId)
+                            .findAny()
+                            .orElse("");
+                    }
+                },
+                Comparator.nullsLast(Comparator.naturalOrder()) // Handle nulls by placing them at the end
+            ))
+    )
+    .collect(Collectors.toList());
+
+
+
+
 public List<P2PVisualization> processAndSortP2PVisualizations(List<P2PVisualization> p2pVisualizationParties) {
     // Step 1: Separate entries with different parentPartyIds in nonOwnershipRelationships
     List<P2PVisualization> separatedList = p2pVisualizationParties.stream()
