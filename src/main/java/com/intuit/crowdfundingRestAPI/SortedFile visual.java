@@ -1,4 +1,25 @@
 
+public List<P2PVisualization> sortP2PVisualizationsForNonOwnershipRelationship(List<P2PVisualization> p2VisualizationParties) {
+    // Filter out parties that have an empty ownershipRelationships list and a non-empty nonOwnershipRelationships list
+    var nonOwnershipOnlyList = p2VisualizationParties.stream()
+        .filter(party -> party.getOwnershipRelationships().isEmpty() && !party.getNonOwnershipRelationships().isEmpty())
+        .collect(Collectors.toList());
+
+    var spList = nonOwnershipOnlyList.stream()
+        .flatMap(party -> party.getNonOwnershipRelationships().stream())
+        .collect(Collectors.groupingBy(P2PRelationship::getParentPartyId))
+        .values().stream()
+        .map(relationships -> {
+            // Your existing logic to process relationships
+        })
+        .collect(Collectors.toList());
+
+    return spList;
+}
+
+
+
+
 return Stream.concat(
         // First, add entries with ownership relationships or no non-ownership relationships
         p2pVisualizationParties.stream()
